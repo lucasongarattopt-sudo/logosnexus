@@ -661,21 +661,13 @@ function lexShell(lex, inner){
         '<span class="text-[10px] font-bold text-emerald-700 bg-emerald-500/10 px-2 py-0.5 rounded">' + (lex.code || "Strong") + '</span>' +
         '<h4 class="' + lex.lang + ' text-2xl sm:text-3xl font-bold text-sky-800 dark:text-sky-300 mt-1">' + escapeHTML(lex.word) + '</h4>' +
       '</div>' +
-      '<button id="btnSpeakLex" class="p-2.5 bg-sky-600 active:bg-sky-700 text-white rounded-xl text-sm shadow transition active:scale-95">🔊</button>' +
+      '<button id="btnSpeakLex" class="p-2.5 bg-sky-600 text-white rounded-xl text-sm">🔊</button>' +
     '</div>' + inner + '</div>';
 }
 
 function bindLexButtons(){
   const b = document.getElementById("btnSpeakLex");
-  if (b && lastLex) {
-    // Evento duplo (toque móvel + clique) para garantir que funcione em qualquer telemóvel instantaneamente
-    const triggerAudio = (e) => {
-      e.preventDefault();
-      speak(lastLex.word, lastLex.phonetic, lastLex.lang);
-    };
-    b.onclick = triggerAudio;
-    b.ontouchstart = triggerAudio;
-  }
+  if (b && lastLex) b.onclick = () => speak(lastLex.word, lastLex.phonetic, lastLex.lang);
   const t = document.getElementById("btnTranslateDef");
   if (t) t.onclick = () => {
     switchTab("Ai");
@@ -747,6 +739,7 @@ async function loadCrossReferences(bookId, chapter, verse, verseText){
       return;
     }
 
+    // Fallback inteligente por palavra-chave caso a API de cruzamento falhe
     const stopWords = new Set(["que","para","como","com","por","mas","este","esta","dos","das","aos","uma"]);
     const words = verseText.toLowerCase().replace(/[^\w\sÀ-ÿ]/g, "").split(/\s+/)
       .filter(w => w.length > 5 && !stopWords.has(w))
