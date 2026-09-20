@@ -447,71 +447,28 @@ function phoneticGreek(s){
 function phoneticPT(word, lang){ return lang === "hebrew" ? phoneticHebrew(word) : phoneticGreek(word); }
 
 let audioEl = null;
-function remoteTTS(word, lang){
-  return new Promise((resolve, reject) => {
-    const q = word.slice(0, 180);
-    const tl = lang === "hebrew" ? "iw" : "el";
-    const url = "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&ttsspeed=0.4&tl=" + tl + "&q=" + encodeURIComponent(q);
-    if (audioEl) { audioEl.pause(); audioEl = null; }
-    const a = new Audio();
-    a.preload = "auto";
-    let settled = false;
-    const fail = () => { if (!settled) { settled = true; reject(new Error("tts")); } };
-    a.onerror = fail;
-    a.onplaying = () => { if (!settled) { settled = true; resolve(true); } };
-    a.onended = () => { audioEl = null; };
-    a.src = url;
-    audioEl = a;
-    a.play().catch(fail);
-    setTimeout(() => { if (!settled) fail(); }, 4000);
+
+// SISTEMA DE ÁUDIO OTIMIZADO PARA MOBILE (HTML5 Audio + Fallback Nativo)
+function playWordAudio(word, phonetic, lang) {
+  const q = word.slice(0, 180);
+  const tl = lang === "hebrew" ? "iw" : "el";
+  const url = "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&ttsspeed=0.4&tl=" + tl + "&q=" + encodeURIComponent(q);
+  
+  if (audioEl) { audioEl.pause(); audioEl = null; }
+  
+  const a = new Audio(url);
+  audioEl = a;
+  
+  a.play().catch(() => {
+    // Fallback para síntese de voz nativa caso o navegador bloqueie o streaming de áudio
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(word);
+      u.lang = lang === "hebrew" ? "he-IL" : "el-GR";
+      u.rate = 0.8;
+      window.speechSynthesis.speak(u);
+    }
   });
-}
-
-let voices = [];
-function loadVoices(){
-  if (!("speechSynthesis" in window)) { renderVoiceStatus(); return; }
-  voices = window.speechSynthesis.getVoices() || [];
-  renderVoiceStatus();
-}
-if ("speechSynthesis" in window) { window.speechSynthesis.onvoiceschanged = loadVoices; }
-
-function findVoice(prefix){ return voices.find(v => (v.lang || "").toLowerCase().replace("_", "-").startsWith(prefix)); }
-
-function renderVoiceStatus(){
-  const el = document.getElementById("voiceStatus");
-  if (!el) return;
-  const he = findVoice("he"), gr = findVoice("el");
-  el.innerHTML = "<b>Áudio original</b><br>Sintetizador remoto (IW/EL).<br>" +
-    "<span class='opacity-80'>Hebr: " + (he ? "Ativo" : "Nenhum") + " | Grego: " + (gr ? "Ativo" : "Nenhum") + "</span>";
-}
-
-function localTTS(text, langTag, rate){
-  return new Promise((resolve, reject) => {
-    if (!("speechSynthesis" in window)) return reject(new Error("sem síntese"));
-    const synth = window.speechSynthesis;
-    synth.cancel();
-    if (synth.paused) synth.resume();
-    const u = new SpeechSynthesisUtterance(text);
-    const v = findVoice(langTag);
-    if (v) { u.voice = v; u.lang = v.lang; }
-    else if (langTag === "pt") { u.lang = "pt-PT"; }
-    else return reject(new Error("voz ausente"));
-    u.rate = rate || 0.75;
-    let settled = false;
-    u.onstart = () => { if (!settled) { settled = true; resolve(true); } };
-    u.onerror = () => { if (!settled) { settled = true; reject(new Error("erro")); } };
-    synth.speak(u);
-    setTimeout(() => { if (!settled) { settled = true; reject(new Error("timeout")); } }, 3000);
-  });
-}
-
-function setAudioNote(msg){ const el = document.getElementById("audioNote"); if (el) el.textContent = msg || ""; }
-
-async function speak(word, phonetic, lang){
-  setAudioNote("a reproduzir…");
-  try { await remoteTTS(word, lang); return; } catch (e) {}
-  try { await localTTS(word, lang === "hebrew" ? "he" : "el", 0.7); return; } catch (e) {}
-  try { await localTTS(phonetic, "pt", 0.7); } catch (e) {}
 }
 
 function bookInfo(id){ return BOOKS.find(b => b.id === id) || BOOKS[0]; }
@@ -661,13 +618,11 @@ function lexShell(lex, inner){
         '<span class="text-[10px] font-bold text-emerald-700 bg-emerald-500/10 px-2 py-0.5 rounded">' + (lex.code || "Strong") + '</span>' +
         '<h4 class="' + lex.lang + ' text-2xl sm:text-3xl font-bold text-sky-800 dark:text-sky-300 mt-1">' + escapeHTML(lex.word) + '</h4>' +
       '</div>' +
-      '<button id="btnSpeakLex" class="p-2.5 bg-sky-600 text-white rounded-xl text-sm">🔊</button>' +
+      '<button id="btnSpeakLex" onclick="playWordAudio(lastLex.word, lastLex.phonetic, lastLex.lang)" class="p-2.5 bg-sky-600 text-white rounded-xl text-sm active:scale-95 transition">🔊</button>' +
     '</div>' + inner + '</div>';
 }
 
 function bindLexButtons(){
-  const b = document.getElementById("btnSpeakLex");
-  if (b && lastLex) b.onclick = () => speak(lastLex.word, lastLex.phonetic, lastLex.lang);
   const t = document.getElementById("btnTranslateDef");
   if (t) t.onclick = () => {
     switchTab("Ai");
@@ -739,7 +694,6 @@ async function loadCrossReferences(bookId, chapter, verse, verseText){
       return;
     }
 
-    // Fallback inteligente por palavra-chave caso a API de cruzamento falhe
     const stopWords = new Set(["que","para","como","com","por","mas","este","esta","dos","das","aos","uma"]);
     const words = verseText.toLowerCase().replace(/[^\w\sÀ-ÿ]/g, "").split(/\s+/)
       .filter(w => w.length > 5 && !stopWords.has(w))
