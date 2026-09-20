@@ -316,7 +316,7 @@ const BOOKS = [
  ["3 João",1,"NT"],["Judas",1,"NT"],["Apocalipse",22,"NT"]
 ].map((b,i)=>({ id:i+1, name:b[0], chapters:b[1], test:b[2] }));
 
-const API = "https://api.allorigins.win/raw?url=" + encodeURIComponent("https://bolls.life");
+const API = "https://bolls.life";
 const ORIGINAL_OT = "WLCa";
 const ORIGINAL_NT = "TISCH";
 
@@ -334,19 +334,12 @@ let lastLex = null;
 let leafletMap = null;
 let leafletMarker = null;
 
-async function getJSON(endpoint){
-  const targetUrl = "https://bolls.life" + endpoint;
-  const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(targetUrl);
-  if (cache[targetUrl]) return cache[targetUrl];
-  
-  let r = await fetch(proxyUrl);
-  if (!r.ok) {
-    // Tentativa direta caso o proxy falhe
-    r = await fetch(targetUrl);
-    if (!r.ok) throw new Error("HTTP " + r.status);
-  }
+async function getJSON(url){
+  if (cache[url]) return cache[url];
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("HTTP " + r.status);
   const data = await r.json();
-  cache[targetUrl] = data;
+  cache[url] = data;
   return data;
 }
 
@@ -454,29 +447,71 @@ function phoneticGreek(s){
 function phoneticPT(word, lang){ return lang === "hebrew" ? phoneticHebrew(word) : phoneticGreek(word); }
 
 let audioEl = null;
+function remoteTTS(word, lang){
+  return new Promise((resolve, reject) => {
+    const q = word.slice(0, 180);
+    const tl = lang === "hebrew" ? "iw" : "el";
+    const url = "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&ttsspeed=0.4&tl=" + tl + "&q=" + encodeURIComponent(q);
+    if (audioEl) { audioEl.pause(); audioEl = null; }
+    const a = new Audio();
+    a.preload = "auto";
+    let settled = false;
+    const fail = () => { if (!settled) { settled = true; reject(new Error("tts")); } };
+    a.onerror = fail;
+    a.onplaying = () => { if (!settled) { settled = true; resolve(true); } };
+    a.onended = () => { audioEl = null; };
+    a.src = url;
+    audioEl = a;
+    a.play().catch(fail);
+    setTimeout(() => { if (!settled) fail(); }, 4000);
+  });
+}
 
-function playWordAudio(word, phonetic, lang) {
-  const q = word.slice(0, 180);
-  const tl = lang === "hebrew" ? "iw" : "el";
-  const url = "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&ttsspeed=0.4&tl=" + tl + "&q=" + encodeURIComponent(q);
-  
-  if (audioEl) { audioEl.pause(); audioEl = null; }
-  
-  const a = new Audio(url);
-  audioEl = a;
-  
-  const playPromise = a.play();
-  if (playPromise !== undefined) {
-    playPromise.catch(() => {
-      if ("speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(word);
-        u.lang = lang === "hebrew" ? "he-IL" : "el-GR";
-        u.rate = 0.75;
-        window.speechSynthesis.speak(u);
-      }
-    });
-  }
+let voices = [];
+function loadVoices(){
+  if (!("speechSynthesis" in window)) { renderVoiceStatus(); return; }
+  voices = window.speechSynthesis.getVoices() || [];
+  renderVoiceStatus();
+}
+if ("speechSynthesis" in window) { window.speechSynthesis.onvoiceschanged = loadVoices; }
+
+function findVoice(prefix){ return voices.find(v => (v.lang || "").toLowerCase().replace("_", "-").startsWith(prefix)); }
+
+function renderVoiceStatus(){
+  const el = document.getElementById("voiceStatus");
+  if (!el) return;
+  const he = findVoice("he"), gr = findVoice("el");
+  el.innerHTML = "<b>Áudio original</b><br>Sintetizador remoto (IW/EL).<br>" +
+    "<span class='opacity-80'>Hebr: " + (he ? "Ativo" : "Nenhum") + " | Grego: " + (gr ? "Ativo" : "Nenhum") + "</span>";
+}
+
+function localTTS(text, langTag, rate){
+  return new Promise((resolve, reject) => {
+    if (!("speechSynthesis" in window)) return reject(new Error("sem síntese"));
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    if (synth.paused) synth.resume();
+    const u = new SpeechSynthesisUtterance(text);
+    const v = findVoice(langTag);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    else if (langTag === "pt") { u.lang = "pt-PT"; }
+    else return reject(new Error("voz ausente"));
+    u.rate = rate || 0.75;
+    let settled = false;
+    u.onstart = () => { if (!settled) { settled = true; resolve(true); } };
+    u.onerror = () => { if (!settled) { settled = true; reject(new Error("erro")); } };
+    synth.speak(u);
+    setTimeout(() => { if (!settled) { settled = true; reject(new Error("timeout")); } }, 3000);
+  });
+}
+
+function setAudioNote(msg){ const el = document.getElementById("audioNote"); if (el) el.textContent = msg || ""; }
+
+async function speak(word, phonetic, lang){
+  setAudioNote("a reproduzir…");
+  try { await remoteTTS(word, lang); return; } catch (e) {}
+  try { await localTTS(word, lang === "hebrew" ? "he" : "el", 0.7); return; } catch (e) {}
+  try { await localTTS(phonetic, "pt", 0.7); } catch (e) {}
 }
 
 function bookInfo(id){ return BOOKS.find(b => b.id === id) || BOOKS[0]; }
@@ -494,13 +529,13 @@ async function loadPassage(){
   document.getElementById("versionBadge").textContent = state.version;
   box.innerHTML = '<div class="py-10 text-center text-slate-400 text-sm">Carregando ' + info.name + " " + state.chapter + "…</div>";
 
-  const tPath = "/get-text/" + state.version + "/" + state.book + "/" + state.chapter + "/";
-  const oPath = "/get-text/" + orig + "/" + state.book + "/" + state.chapter + "/";
+  const tUrl = API + "/get-text/" + state.version + "/" + state.book + "/" + state.chapter + "/";
+  const oUrl = API + "/get-text/" + orig + "/" + state.book + "/" + state.chapter + "/";
 
   let translation = [], original = [], origError = null;
 
   try {
-    const results = await Promise.allSettled([getJSON(tPath), getJSON(oPath)]);
+    const results = await Promise.allSettled([getJSON(tUrl), getJSON(oUrl)]);
     if (results[0].status === "fulfilled") translation = results[0].value || [];
     else throw results[0].reason;
     if (results[1].status === "fulfilled") original = results[1].value || [];
@@ -596,7 +631,7 @@ async function openLexicon(code, word, lang, tr){
   let entries = lexCache[code];
   if (!entries) {
     try {
-      entries = await getJSON("/dictionary-definition/BDBT/" + code + "/");
+      entries = await getJSON(API + "/dictionary-definition/BDBT/" + code + "/");
       lexCache[code] = entries;
     } catch (e) {
       panel.innerHTML = lexShell(lastLex, '<p class="text-xs text-rose-500">Erro ao carregar</p>');
@@ -626,11 +661,21 @@ function lexShell(lex, inner){
         '<span class="text-[10px] font-bold text-emerald-700 bg-emerald-500/10 px-2 py-0.5 rounded">' + (lex.code || "Strong") + '</span>' +
         '<h4 class="' + lex.lang + ' text-2xl sm:text-3xl font-bold text-sky-800 dark:text-sky-300 mt-1">' + escapeHTML(lex.word) + '</h4>' +
       '</div>' +
-      '<button id="btnSpeakLex" ontouchstart="playWordAudio(lastLex.word, lastLex.phonetic, lastLex.lang)" onclick="playWordAudio(lastLex.word, lastLex.phonetic, lastLex.lang)" class="px-3 py-2 bg-sky-600 active:bg-sky-700 text-white rounded-xl text-sm font-bold flex items-center gap-1 shadow transition active:scale-95"><span>🔊 Ouvir</span></button>' +
+      '<button id="btnSpeakLex" class="p-2.5 bg-sky-600 active:bg-sky-700 text-white rounded-xl text-sm shadow transition active:scale-95">🔊</button>' +
     '</div>' + inner + '</div>';
 }
 
 function bindLexButtons(){
+  const b = document.getElementById("btnSpeakLex");
+  if (b && lastLex) {
+    // Evento duplo (toque móvel + clique) para garantir que funcione em qualquer telemóvel instantaneamente
+    const triggerAudio = (e) => {
+      e.preventDefault();
+      speak(lastLex.word, lastLex.phonetic, lastLex.lang);
+    };
+    b.onclick = triggerAudio;
+    b.ontouchstart = triggerAudio;
+  }
   const t = document.getElementById("btnTranslateDef");
   if (t) t.onclick = () => {
     switchTab("Ai");
@@ -646,7 +691,8 @@ async function executeSearch(){
 
   out.textContent = "Pesquisando...";
   try {
-    const data = await getJSON("/search/" + state.version + "/" + encodeURIComponent(rawQuery) + "/");
+    const url = API + "/search/" + state.version + "/" + encodeURIComponent(rawQuery) + "/";
+    const data = await getJSON(url);
     if (!data || data.length === 0) {
       out.textContent = "Nenhum resultado encontrado.";
       return;
@@ -683,8 +729,9 @@ async function loadCrossReferences(bookId, chapter, verse, verseText){
   display.innerHTML = "Buscando conexões para " + bName + " " + chapter + ":" + verse + "...";
   
   try {
+    const crossUrl = API + "/cross-reference/" + bookId + "/" + chapter + "/" + verse + "/";
     let links = [];
-    try { links = await getJSON("/cross-reference/" + bookId + "/" + chapter + "/" + verse + "/"); } catch(err) { links = []; }
+    try { links = await getJSON(crossUrl); } catch(err) { links = []; }
 
     if (links && links.length > 0) {
       display.innerHTML = "<b>Paralelas para " + bName + " " + chapter + ":" + verse + "</b><div class='mt-1.5 space-y-1 max-h-[160px] overflow-y-auto'>";
@@ -705,7 +752,8 @@ async function loadCrossReferences(bookId, chapter, verse, verseText){
       .filter(w => w.length > 5 && !stopWords.has(w))
       .sort((a, b) => b.length - a.length);
     const keyword = words[0] || bName;
-    const searchData = await getJSON("/search/" + state.version + "/" + encodeURIComponent(keyword) + "/");
+    const searchUrl = API + "/search/" + state.version + "/" + encodeURIComponent(keyword) + "/";
+    const searchData = await getJSON(searchUrl);
     const related = (searchData || []).filter(item => !(item.book === bookId && item.chapter === chapter && item.verse === verse)).slice(0, 5);
 
     if (related.length > 0) {
