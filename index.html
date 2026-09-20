@@ -145,9 +145,24 @@ header { padding-top: env(safe-area-inset-top, 0px); }
       </div>
     </main>
 
-    <!-- ===== Painel lateral: abaixo no telemóvel ===== -->
-    <aside id="sidePanel" class="order-2 lg:col-span-5 xl:col-span-4 scroll-mt-28">
-      <div class="bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 sm:p-4 lg:sticky lg:top-24 flex flex-col max-h-[75vh] lg:h-[calc(100vh-8rem)] shadow-sm">
+    <!-- ===== Fundo escurecido da gaveta (só telemóvel) ===== -->
+    <div id="sheetBackdrop" onclick="closeSidePanel()" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden"></div>
+
+    <!-- ===== Painel lateral: gaveta no telemóvel, coluna fixa no computador ===== -->
+    <aside id="sidePanel" class="order-2 lg:col-span-5 xl:col-span-4
+      fixed inset-x-0 bottom-0 z-50 translate-y-full transition-transform duration-300 ease-out
+      lg:static lg:z-auto lg:translate-y-0 lg:transition-none">
+      <div class="bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800
+        rounded-t-3xl lg:rounded-2xl p-3 sm:p-4 lg:sticky lg:top-24 flex flex-col
+        max-h-[86vh] lg:h-[calc(100vh-8rem)] lg:max-h-none shadow-2xl lg:shadow-sm
+        pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] lg:pb-4">
+
+        <!-- Puxador + fechar (só telemóvel) -->
+        <div class="lg:hidden flex items-center justify-between mb-1 shrink-0">
+          <span class="w-9"></span>
+          <span class="block w-10 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+          <button onclick="closeSidePanel()" class="w-9 h-9 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-base" aria-label="Fechar">✕</button>
+        </div>
 
         <div class="flex border-b border-slate-200 dark:border-slate-800 pb-2 gap-1 shrink-0 overflow-x-auto no-scrollbar">
           <button id="tabBtnLex" onclick="switchTab('Lex')" class="tabbtn"><span>📖</span><span>Dicionário</span></button>
@@ -165,9 +180,12 @@ header { padding-top: env(safe-area-inset-top, 0px); }
             <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">O verbete (BDB/Thayer) aparece aqui já traduzido para português, com transliteração, leitura figurada e áudio.</p>
           </div>
           <div id="voiceStatus" class="mt-3 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800"></div>
+          <button id="btnTestVoice" class="mt-2 w-full py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-[11px] font-semibold">🔊 Testar voz do aparelho</button>
+          <p id="voiceTestResult" class="text-[10px] mt-1.5 text-slate-400 leading-relaxed"></p>
         </div>
 
         <!-- Busca -->
+
         <div id="tabSearch" class="py-3 flex-1 flex-col hidden overflow-hidden min-h-0">
           <p class="text-xs text-slate-500 dark:text-slate-400 mb-2 shrink-0">Pesquisa por termo em toda a Bíblia.</p>
           <div class="flex gap-1.5 mb-2 shrink-0">
@@ -252,6 +270,12 @@ header { padding-top: env(safe-area-inset-top, 0px); }
   <footer class="max-w-7xl mx-auto w-full px-4 pb-6 text-[10px] sm:text-[11px] text-slate-400 leading-relaxed text-center sm:text-left">
     Texto original: Códice de Leningrado vocalizado (AT) e Tischendorf (NT), ambos etiquetados com números de Strong. Léxico: Brown-Driver-Briggs / Thayer. Dados servidos pela API pública bolls.life.
   </footer>
+
+  <!-- Botão flutuante: abre a gaveta do dicionário/notas/IA no telemóvel -->
+  <button id="fabPanel" onclick="openSidePanel()"
+    class="lg:hidden fixed z-30 bottom-5 right-4 w-14 h-14 rounded-full bg-sky-600 text-white text-2xl shadow-xl shadow-sky-900/30 flex items-center justify-center active:scale-95 transition"
+    style="bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));"
+    aria-label="Abrir dicionário, notas e IA">📖</button>
 </div>
 
 <script>
@@ -416,6 +440,7 @@ function phoneticPT(w, lang){ return lang === "hebrew" ? phoneticHebrew(w) : pho
    ============================================================================ */
 let audioUnlocked = false;
 let sharedAudio = null;
+let speechPrimed = false;
 
 function getAudioEl(){
   if (!sharedAudio) {
@@ -424,6 +449,21 @@ function getAudioEl(){
     sharedAudio.setAttribute("playsinline", "");
   }
   return sharedAudio;
+}
+
+/* O iOS tem um bug antigo e bem documentado: a primeiríssima utterance de
+   uma página, se for cancelada antes de terminar, deixa o motor preso. Mas
+   se a deixarmos terminar sozinha — mesmo curta e quase inaudível — o motor
+   fica "aquecido" e as chamadas seguintes funcionam normalmente. */
+function primeSpeechEngine(){
+  if (!("speechSynthesis" in window) || speechPrimed) return;
+  speechPrimed = true;
+  try {
+    const u = new SpeechSynthesisUtterance(" ");
+    u.volume = 0.01;
+    u.rate = 10;
+    window.speechSynthesis.speak(u);   // não cancelar: deixar terminar sozinha
+  } catch (e) {}
 }
 
 function unlockAudio(){
@@ -436,6 +476,7 @@ function unlockAudio(){
     a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; })
             .catch(() => { a.muted = false; });
   } catch (e) {}
+  primeSpeechEngine();
   loadVoices();
 }
 document.addEventListener("pointerdown", unlockAudio, { once: true });
@@ -516,10 +557,12 @@ function speak(word, phonetic, lang){
   if ("speechSynthesis" in window) {
     const synth = window.speechSynthesis;
     const voice = findVoice(lang === "hebrew" ? "he" : "el");
+    const ptVoice = !voice ? (findVoice("pt-pt") || findVoice("pt")) : null;
 
     const fire = () => {
       const u = new SpeechSynthesisUtterance(voice ? word : phonetic);
       if (voice) { u.voice = voice; u.lang = voice.lang; }
+      else if (ptVoice) { u.voice = ptVoice; u.lang = ptVoice.lang; }
       else { u.lang = "pt-PT"; }
       u.rate = 0.72;
       u.volume = 1;
@@ -530,7 +573,7 @@ function speak(word, phonetic, lang){
         voice ? undefined : "warn"
       );
       u.onerror = ev => setAudioNote(
-        "erro ao falar (" + (ev && ev.error ? ev.error : "desconhecido") + "). Verifique o botão lateral de silêncio do iPhone.",
+        "erro ao falar (" + (ev && ev.error ? ev.error : "desconhecido") + "). Toque em “Testar voz do aparelho” abaixo para diagnosticar.",
         "warn"
       );
 
@@ -540,7 +583,7 @@ function speak(word, phonetic, lang){
     setAudioNote("a preparar…");
     if (synth.speaking || synth.pending) {
       synth.cancel();
-      setTimeout(fire, 60);   // dá tempo ao WebKit para esvaziar a fila antes de falar de novo
+      setTimeout(fire, 60);
     } else {
       fire();
     }
@@ -552,6 +595,32 @@ function speak(word, phonetic, lang){
     .then(() => setAudioNote(lang === "hebrew" ? "hebraico · serviço remoto" : "grego · serviço remoto"))
     .catch(() => setAudioNote("áudio indisponível neste navegador", "warn"));
 }
+
+/* Fala independente de hebraico/grego, só para confirmar se ESTE aparelho
+   consegue produzir voz de todo. Se isto também ficar mudo, o problema não
+   está na página — está no volume, no interruptor de silêncio, ou numa
+   definição do sistema/navegador que bloqueia a síntese de voz. */
+function testDeviceVoice(){
+  const res = document.getElementById("voiceTestResult");
+  if (!res) return;
+  unlockAudio();
+  if (!("speechSynthesis" in window)) { res.textContent = "Este navegador não suporta síntese de voz."; return; }
+
+  const synth = window.speechSynthesis;
+  const run = () => {
+    const u = new SpeechSynthesisUtterance("Teste de voz. Um, dois, três.");
+    const v = findVoice("pt-pt") || findVoice("pt");
+    if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = "pt-PT"; }
+    u.rate = 0.95; u.volume = 1;
+    res.textContent = "A falar…";
+    u.onstart = () => { res.textContent = "A falar — se não ouviu nada, o som do sistema está a bloquear (veja abaixo)."; };
+    u.onend = () => { res.textContent = "Terminou. Se ficou em silêncio: verifique o interruptor lateral de silêncio do iPhone, o volume dos multimédia (não é o mesmo que o volume da chamada) e se a Safari tem som permitido em Definições ▸ Safari ▸ reprodução automática de som."; };
+    u.onerror = ev => { res.textContent = "Erro do sistema: " + (ev && ev.error ? ev.error : "desconhecido") + "."; };
+    synth.speak(u);
+  };
+  if (synth.speaking || synth.pending) { synth.cancel(); setTimeout(run, 60); } else { run(); }
+}
+document.addEventListener("click", e => { if (e.target.closest("#btnTestVoice")) testDeviceVoice(); });
 
 /* ===================== CARREGAR PASSAGEM ===================== */
 function bookInfo(id){ return BOOKS.find(b => b.id === id) || BOOKS[0]; }
@@ -683,11 +752,24 @@ async function toPortuguese(text){
   return out;
 }
 
-function focusPanel(){
-  if (window.matchMedia("(max-width: 1023px)").matches) {
-    document.getElementById("sidePanel").scrollIntoView({ behavior:"smooth", block:"start" });
-  }
+function isMobilePanel(){ return window.matchMedia("(max-width: 1023px)").matches; }
+
+function openSidePanel(){
+  if (!isMobilePanel()) return;
+  document.getElementById("sidePanel").classList.remove("translate-y-full");
+  document.getElementById("sheetBackdrop").classList.remove("hidden");
+  document.body.style.overflow = "hidden";
 }
+function closeSidePanel(){
+  document.getElementById("sidePanel").classList.add("translate-y-full");
+  document.getElementById("sheetBackdrop").classList.add("hidden");
+  document.body.style.overflow = "";
+}
+function focusPanel(){ openSidePanel(); }
+
+window.addEventListener("resize", () => {
+  if (!isMobilePanel()) closeSidePanel();
+});
 
 async function openLexicon(code, word, lang, tr){
   switchTab("Lex");
