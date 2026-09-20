@@ -114,7 +114,10 @@ header { padding-top: env(safe-area-inset-top, 0px); }
           <h2 id="passageTitle" class="text-lg sm:text-2xl font-bold tracking-tight truncate">Carregando…</h2>
           <p id="passageSub" class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5"></p>
         </div>
-        <span id="versionBadge" class="shrink-0 px-2 py-0.5 bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20 rounded-md text-[11px] font-bold uppercase">ACF</span>
+        <div class="flex items-center gap-2">
+          <button onclick="copyCurrentChapter()" id="btnCopyChapter" class="tap-sm px-2 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-[10px] font-medium" title="Copiar texto do capítulo">📋 Copiar Capítulo</button>
+          <span id="versionBadge" class="shrink-0 px-2 py-0.5 bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20 rounded-md text-[11px] font-bold uppercase">ACF</span>
+        </div>
       </div>
 
       <div id="bibleText" class="space-y-3 sm:space-y-5 leading-relaxed text-[15px] sm:text-base flex-1"></div>
@@ -166,7 +169,6 @@ header { padding-top: env(safe-area-inset-top, 0px); }
         </div>
 
         <!-- Busca -->
-
         <div id="tabSearch" class="py-3 flex-1 flex-col hidden overflow-hidden min-h-0">
           <p class="text-xs text-slate-500 dark:text-slate-400 mb-2 shrink-0">Pesquisa por termo em toda a Bíblia.</p>
           <div class="flex gap-1.5 mb-2 shrink-0">
@@ -191,8 +193,8 @@ header { padding-top: env(safe-area-inset-top, 0px); }
             <button onclick="generateTopicStudy()" class="px-3 py-2 bg-sky-600 text-white rounded-xl text-xs font-bold shrink-0">Gerar</button>
           </div>
           <div class="flex justify-between items-center mb-1 shrink-0">
-            <span class="text-[10px] text-slate-400">Resultado</span>
-            <button onclick="copyTopicOutput()" id="btnCopyTopic" class="tap-sm text-[10px] px-2 py-0.5 bg-slate-200 dark:bg-slate-800 rounded font-medium">📋 Copiar</button>
+            <span class="text-[10px] text-slate-400">Resultado da Seção Temas</span>
+            <button onclick="copyTopicOutput()" id="btnCopyTopic" class="tap-sm text-[10px] px-2 py-0.5 bg-slate-200 dark:bg-slate-800 rounded font-medium">📋 Copiar Tema</button>
           </div>
           <div id="topicOutput" class="p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs leading-relaxed whitespace-pre-wrap flex-1 overflow-y-auto min-h-0">
             <span class="text-slate-400">Escolha um tema ou escreva um assunto.</span>
@@ -241,6 +243,10 @@ header { padding-top: env(safe-area-inset-top, 0px); }
             <button onclick="askAI()" class="flex-1 py-2 bg-sky-600 text-white rounded-xl text-xs font-bold">Consultar</button>
             <button onclick="askAI('chapter')" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold shrink-0">Capítulo</button>
           </div>
+          <div class="flex justify-between items-center mb-1 shrink-0">
+            <span class="text-[10px] text-slate-400">Resposta da Seção IA</span>
+            <button onclick="copyAiOutput()" id="btnCopyAi" class="tap-sm text-[10px] px-2 py-0.5 bg-slate-200 dark:bg-slate-800 rounded font-medium">📋 Copiar IA</button>
+          </div>
           <div id="aiResponse" class="p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs leading-relaxed whitespace-pre-wrap hidden flex-1 overflow-y-auto min-h-0"></div>
         </div>
 
@@ -279,20 +285,20 @@ const TAB_BASE = "tabbtn flex-none w-[70px] sm:w-auto sm:flex-1 py-1.5 px-1 text
 
 /* ===================== LIVROS ===================== */
 const BOOKS = [
- ["Gênesis",50,"OT"],["Êxodo",40,"OT"],["Levítico",27,"OT"],["Números",36,"OT"],["Deuteronômio",34,"OT"],
- ["Josué",24,"OT"],["Juízes",21,"OT"],["Rute",4,"OT"],["1 Samuel",31,"OT"],["2 Samuel",24,"OT"],
- ["1 Reis",22,"OT"],["2 Reis",25,"OT"],["1 Crônicas",29,"OT"],["2 Crônicas",36,"OT"],["Esdras",10,"OT"],
- ["Neemias",13,"OT"],["Ester",10,"OT"],["Jó",42,"OT"],["Salmos",150,"OT"],["Provérbios",31,"OT"],
- ["Eclesiastes",12,"OT"],["Cânticos",8,"OT"],["Isaías",66,"OT"],["Jeremias",52,"OT"],["Lamentações",5,"OT"],
- ["Ezequiel",48,"OT"],["Daniel",12,"OT"],["Oseias",14,"OT"],["Joel",3,"OT"],["Amós",9,"OT"],
- ["Obadias",1,"OT"],["Jonas",4,"OT"],["Miqueias",7,"OT"],["Naum",3,"OT"],["Habacuque",3,"OT"],
- ["Sofonias",3,"OT"],["Ageu",2,"OT"],["Zacarias",14,"OT"],["Malaquias",4,"OT"],
- ["Mateus",28,"NT"],["Marcos",16,"NT"],["Lucas",24,"NT"],["João",21,"NT"],["Atos",28,"NT"],
- ["Romanos",16,"NT"],["1 Coríntios",16,"NT"],["2 Coríntios",13,"NT"],["Gálatas",6,"NT"],["Efésios",6,"NT"],
- ["Filipenses",4,"NT"],["Colossenses",4,"NT"],["1 Tessalonicenses",5,"NT"],["2 Tessalonicenses",3,"NT"],
- ["1 Timóteo",6,"NT"],["2 Timóteo",4,"NT"],["Tito",3,"NT"],["Filemom",1,"NT"],["Hebreus",13,"NT"],
- ["Tiago",5,"NT"],["1 Pedro",5,"NT"],["2 Pedro",3,"NT"],["1 João",5,"NT"],["2 João",1,"NT"],
- ["3 João",1,"NT"],["Judas",1,"NT"],["Apocalipse",22,"NT"]
+  ["Gênesis",50,"OT"],["Êxodo",40,"OT"],["Levítico",27,"OT"],["Números",36,"OT"],["Deuteronômio",34,"OT"],
+  ["Josué",24,"OT"],["Juízes",21,"OT"],["Rute",4,"OT"],["1 Samuel",31,"OT"],["2 Samuel",24,"OT"],
+  ["1 Reis",22,"OT"],["2 Reis",25,"OT"],["1 Crônicas",29,"OT"],["2 Crônicas",36,"OT"],["Esdras",10,"OT"],
+  ["Neemias",13,"OT"],["Ester",10,"OT"],["Jó",42,"OT"],["Salmos",150,"OT"],["Provérbios",31,"OT"],
+  ["Eclesiastes",12,"OT"],["Cânticos",8,"OT"],["Isaías",66,"OT"],["Jeremias",52,"OT"],["Lamentações",5,"OT"],
+  ["Ezequiel",48,"OT"],["Daniel",12,"OT"],["Oseias",14,"OT"],["Joel",3,"OT"],["Amós",9,"OT"],
+  ["Obadias",1,"OT"],["Jonas",4,"OT"],["Miqueias",7,"OT"],["Naum",3,"OT"],["Habacuque",3,"OT"],
+  ["Sofonias",3,"OT"],["Ageu",2,"OT"],["Zacarias",14,"OT"],["Malaquias",4,"OT"],
+  ["Mateus",28,"NT"],["Marcos",16,"NT"],["Lucas",24,"NT"],["João",21,"NT"],["Atos",28,"NT"],
+  ["Romanos",16,"NT"],["1 Coríntios",16,"NT"],["2 Coríntios",13,"NT"],["Gálatas",6,"NT"],["Efésios",6,"NT"],
+  ["Filipenses",4,"NT"],["Colossenses",4,"NT"],["1 Tessalonicenses",5,"NT"],["2 Tessalonicenses",3,"NT"],
+  ["1 Timóteo",6,"NT"],["2 Timóteo",4,"NT"],["Tito",3,"NT"],["Filemom",1,"NT"],["Hebreus",13,"NT"],
+  ["Tiago",5,"NT"],["1 Pedro",5,"NT"],["2 Pedro",3,"NT"],["1 João",5,"NT"],["2 João",1,"NT"],
+  ["3 João",1,"NT"],["Judas",1,"NT"],["Apocalipse",22,"NT"]
 ].map((b,i)=>({ id:i+1, name:b[0], chapters:b[1], test:b[2] }));
 
 const API = "https://bolls.life";
@@ -302,6 +308,7 @@ const ORIGINAL_NT = "TISCH";
 const state = { version:"ACF11", book:1, chapter:1, interlinear:true, showStrong:false };
 const cache = {}, lexCache = {}, trCache = {};
 let lastLex = null, leafletMap = null, leafletMarker = null;
+let currentTranslationText = [];
 
 async function getJSON(url){
   if (cache[url]) return cache[url];
@@ -405,16 +412,7 @@ function phoneticGreek(s){
 }
 function phoneticPT(w, lang){ return lang === "hebrew" ? phoneticHebrew(w) : phoneticGreek(w); }
 
-/* ===================== ÁUDIO (compatível com telemóvel) =====================
-   iOS e Android só deixam iniciar som dentro de um gesto do utilizador, mas
-   o "destravar" do speechSynthesis com speak()+cancel() imediato — truque
-   comum para desbloquear o AudioContext — tem um efeito colateral conhecido
-   no WebKit (motor do Safari e também do Chrome no iOS): cancelar logo a
-   seguir a falar, no mesmo instante, deixa a fila de síntese num estado
-   preso, e todas as chamadas seguintes ficam mudas sem erro nenhum. Por
-   isso aqui só desbloqueamos o elemento <audio> (que precisa mesmo disso);
-   a voz do sistema nunca é tocada fora de uma chamada real do utilizador.
-   ============================================================================ */
+/* ===================== ÁUDIO (compatível com telemóvel) ===================== */
 let audioUnlocked = false;
 let sharedAudio = null;
 let speechPrimed = false;
@@ -428,10 +426,6 @@ function getAudioEl(){
   return sharedAudio;
 }
 
-/* O iOS tem um bug antigo e bem documentado: a primeiríssima utterance de
-   uma página, se for cancelada antes de terminar, deixa o motor preso. Mas
-   se a deixarmos terminar sozinha — mesmo curta e quase inaudível — o motor
-   fica "aquecido" e as chamadas seguintes funcionam normalmente. */
 function primeSpeechEngine(){
   if (!("speechSynthesis" in window) || speechPrimed) return;
   speechPrimed = true;
@@ -439,7 +433,7 @@ function primeSpeechEngine(){
     const u = new SpeechSynthesisUtterance(" ");
     u.volume = 0.01;
     u.rate = 10;
-    window.speechSynthesis.speak(u);   // não cancelar: deixar terminar sozinha
+    window.speechSynthesis.speak(u);
   } catch (e) {}
 }
 
@@ -460,11 +454,6 @@ document.addEventListener("pointerdown", unlockAudio, { once: true });
 document.addEventListener("touchstart", unlockAudio, { once: true, passive: true });
 document.addEventListener("keydown", unlockAudio, { once: true });
 
-/* Vigia de fundo: no iOS Safari a síntese por vezes entra em "pausa" sozinha
-   logo a seguir a começar a falar — um bug antigo e conhecido do WebKit em
-   que speak() arranca já pausado. Isto retoma-a sem o utilizador ter de
-   fazer nada; o intervalo curto é para reagir dentro do tempo de uma
-   palavra falada, não só de frases longas. */
 if ("speechSynthesis" in window) {
   setInterval(() => {
     if (window.speechSynthesis.paused && window.speechSynthesis.speaking) {
@@ -527,10 +516,6 @@ function remoteTTS(word, lang){
   });
 }
 
-/* speak() tem de ser chamada de forma síncrona, dentro do próprio toque do
-   utilizador — sem nenhum "await" antes da chamada a synth.speak(). Também
-   evitamos cancel() quando não há nada a falar, porque cancelar sem motivo
-   é outra causa conhecida de a fila do WebKit ficar presa em silêncio. */
 function speak(word, phonetic, lang){
   unlockAudio();
   if (!voices.length && "speechSynthesis" in window) voices = window.speechSynthesis.getVoices() || [];
@@ -559,7 +544,7 @@ function speak(word, phonetic, lang){
       );
 
       synth.speak(u);
-      synth.resume();   // bug conhecido do iOS: por vezes speak() arranca já em pausa
+      synth.resume();
     };
 
     setAudioNote("a preparar…");
@@ -578,10 +563,6 @@ function speak(word, phonetic, lang){
     .catch(() => setAudioNote("áudio indisponível neste navegador", "warn"));
 }
 
-/* Fala independente de hebraico/grego, só para confirmar se ESTE aparelho
-   consegue produzir voz de todo. Se isto também ficar mudo, o problema não
-   está na página — está no volume, no interruptor de silêncio, ou numa
-   definição do sistema/navegador que bloqueia a síntese de voz. */
 function testDeviceVoice(){
   const res = document.getElementById("voiceTestResult");
   if (!res) return;
@@ -596,7 +577,7 @@ function testDeviceVoice(){
     u.rate = 0.95; u.volume = 1;
     res.textContent = "A falar…";
     u.onstart = () => { res.textContent = "A falar — se não ouviu nada, o som do sistema está a bloquear (veja abaixo)."; };
-    u.onend = () => { res.textContent = "Terminou. Se ficou em silêncio: verifique o interruptor lateral de silêncio do iPhone, o volume dos multimédia (não é o mesmo que o volume da chamada) e se a Safari tem som permitido em Definições ▸ Safari ▸ reprodução automática de som."; };
+    u.onend = () => { res.textContent = "Terminou. Se ficou em silêncio: verifique o interruptor lateral de silêncio do iPhone, o volume dos multimédia (não é o mesmo que o volume da chamada) e se a Safari tiene som permitido em Definições ▸ Safari ▸ reprodução automática de som."; };
     u.onerror = ev => { res.textContent = "Erro do sistema: " + (ev && ev.error ? ev.error : "desconhecido") + "."; };
     synth.speak(u);
     synth.resume();
@@ -605,8 +586,6 @@ function testDeviceVoice(){
 }
 document.addEventListener("click", e => { if (e.target.closest("#btnTestVoice")) testDeviceVoice(); });
 
-/* Diagnóstico técnico em texto simples, para copiar/enviar caso o áudio
-   continue sem funcionar — mostra exatamente o que o navegador reporta. */
 function showAudioDiagnostics(){
   const el = document.getElementById("voiceTestResult");
   if (!el) return;
@@ -649,12 +628,45 @@ async function loadPassage(){
     return;
   }
 
+  currentTranslationText = translation;
   const origByVerse = {};
   original.forEach(v => { origByVerse[v.verse] = v.text; });
 
   render(translation, origByVerse, isOT, origError);
   loadNotes();
   updateMap();
+}
+
+function copyCurrentChapter(){
+  if (!currentTranslationText || !currentTranslationText.length) return;
+  const info = bookInfo(state.book);
+  let textToCopy = info.name + " " + state.chapter + " (" + state.version + ")\n\n";
+  currentTranslationText.forEach(item => {
+    textToCopy += item.verse + ". " + stripTags(item.text) + "\n";
+  });
+  
+  const btn = document.getElementById("btnCopyChapter");
+  const done = () => { btn.textContent = "✅ Copiado"; setTimeout(() => btn.textContent = "📋 Copiar Capítulo", 2000); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(textToCopy).then(done).catch(() => {});
+  } else {
+    const ta = document.createElement("textarea");
+    ta.value = textToCopy; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); done(); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+}
+
+function copySingleVerse(verseNum, verseText){
+  const textToCopy = bookInfo(state.book).name + " " + state.chapter + ":" + verseNum + " (" + state.version + ")\n" + verseText;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(textToCopy);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.value = textToCopy; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+  }
 }
 
 function render(translation, origByVerse, isOT, origError){
@@ -670,6 +682,7 @@ function render(translation, origByVerse, isOT, origError){
   }
 
   translation.forEach(item => {
+    const cleanVerseText = stripTags(item.text);
     const wrap = document.createElement("div");
     wrap.className = "p-2 sm:p-3 rounded-xl border border-transparent hover:border-slate-200 dark:hover:border-slate-800 transition";
 
@@ -678,9 +691,20 @@ function render(translation, origByVerse, isOT, origError){
     head.innerHTML =
       '<button class="shrink-0 text-xs font-bold text-sky-700 dark:text-sky-400 bg-sky-500/10 px-2 py-1 rounded-md" ' +
       'data-verse="' + item.verse + '" title="Passagens paralelas">' + item.verse + "</button>" +
-      '<p class="flex-1 min-w-0 text-slate-800 dark:text-slate-200">' + escapeHTML(stripTags(item.text)) + "</p>";
+      '<p class="flex-1 min-w-0 text-slate-800 dark:text-slate-200">' + escapeHTML(cleanVerseText) + "</p>" +
+      '<button class="shrink-0 text-[10px] px-1.5 py-1 text-slate-400 hover:text-sky-600 rounded bg-slate-100 dark:bg-slate-800" data-copy-verse="' + item.verse + '" title="Copiar versículo">📋</button>';
+    
     head.querySelector("[data-verse]").onclick = () =>
-      loadCrossReferences(state.book, state.chapter, item.verse, stripTags(item.text));
+      loadCrossReferences(state.book, state.chapter, item.verse, cleanVerseText);
+    
+    head.querySelector("[data-copy-verse]").onclick = (e) => {
+      e.stopPropagation();
+      copySingleVerse(item.verse, cleanVerseText);
+      const b = e.currentTarget;
+      b.textContent = "✅";
+      setTimeout(() => b.textContent = "📋", 1500);
+    };
+
     wrap.appendChild(head);
 
     if (state.interlinear) {
@@ -766,7 +790,6 @@ function closeSidePanel(){
 }
 function focusPanel(){ openSidePanel(); }
 
-/* Menu flutuante: cada atalho abre a gaveta já na aba pedida */
 function openPanelTab(tab){
   closeFabMenu();
   switchTab(tab);
@@ -998,8 +1021,8 @@ async function generateTopicStudy(){
   if (!key) { out.textContent = "Insira a API Key do Gemini no separador IA."; return; }
 
   out.textContent = "A gerar o estudo sobre “" + topic + "”…";
-  const prompt = "Faça um estudo bíblico e um esboço de pregação sobre \"" + topic +
-    "\", com versículos-chave, termos originais com o número de Strong e aplicação prática. Responda em português.";
+  const prompt = "Faça um estudo bíblico detalhado e um esboço de pregação sobre \"" + topic +
+    "\", com versículos-chave completos, termos originais com o número de Strong e aplicação prática. Responda em português.";
   const r = await callGemini(key, prompt);
   out.textContent = r.ok ? r.text : "Erro ao gerar o estudo: " + r.error;
 }
@@ -1008,7 +1031,7 @@ function copyTopicOutput(){
   const text = document.getElementById("topicOutput").innerText;
   const btn = document.getElementById("btnCopyTopic");
   if (!text || text.includes("Escolha um tema")) return;
-  const done = () => { btn.textContent = "✅ Copiado"; setTimeout(() => btn.textContent = "📋 Copiar", 2000); };
+  const done = () => { btn.textContent = "✅ Copiado"; setTimeout(() => btn.textContent = "📋 Copiar Tema", 2000); };
   if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(() => {});
   else {
     const ta = document.createElement("textarea");
@@ -1170,7 +1193,7 @@ async function callGemini(key, prompt){
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: "Você é um exegeta bíblico que trabalha a partir do hebraico e do grego originais. Responda sempre em português claro e rigoroso, citando termos originais com transliteração, e assinale divergências entre escolas de interpretação." }] },
           contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.4, maxOutputTokens: 1400 }
+          generationConfig: { temperature: 0.4, maxOutputTokens: 8192 }
         })
       });
       const d = await r.json();
@@ -1196,8 +1219,8 @@ async function askAI(mode){
   const info = bookInfo(state.book);
   let prompt = document.getElementById("aiPrompt").value.trim();
   if (mode === "chapter") {
-    prompt = "Faça um panorama exegético conciso de " + info.name + " " + state.chapter +
-      ": contexto histórico, estrutura do capítulo e três termos do original que mais pesam na interpretação.";
+    prompt = "Faça um panorama exegético completo e aprofundado de " + info.name + " " + state.chapter +
+      ": contexto histórico detalhado, estrutura do capítulo, exegese dos versículos principais e termos do original que mais pesam na interpretação.";
     document.getElementById("aiPrompt").value = prompt;
   }
   if (!prompt) { out.textContent = "Escreva uma pergunta."; return; }
@@ -1205,6 +1228,20 @@ async function askAI(mode){
   out.textContent = "A consultar…";
   const r = await callGemini(key, "Passagem em estudo: " + info.name + " " + state.chapter + " (" + state.version + ").\n\n" + prompt);
   out.textContent = r.ok ? r.text : "Não foi possível obter resposta. Último erro: " + r.error;
+}
+
+function copyAiOutput(){
+  const text = document.getElementById("aiResponse").innerText;
+  const btn = document.getElementById("btnCopyAi");
+  if (!text || text.includes("A consultar") || text.includes("Insira")) return;
+  const done = () => { btn.textContent = "✅ Copiado"; setTimeout(() => btn.textContent = "📋 Copiar IA", 2000); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(() => {});
+  else {
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); done(); } catch (e) {}
+    document.body.removeChild(ta);
+  }
 }
 
 /* ===================== ARRANQUE ===================== */
