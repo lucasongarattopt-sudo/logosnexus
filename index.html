@@ -448,7 +448,7 @@ function phoneticPT(word, lang){ return lang === "hebrew" ? phoneticHebrew(word)
 
 let audioEl = null;
 
-// SISTEMA DE ÁUDIO OTIMIZADO PARA MOBILE (HTML5 Audio + Fallback Nativo)
+// MOTOR DE ÁUDIO ROBUSTO PARA MOBILE COM FEEDBACK TÁCTIL E MULTI-FALLBACK
 function playWordAudio(word, phonetic, lang) {
   const q = word.slice(0, 180);
   const tl = lang === "hebrew" ? "iw" : "el";
@@ -459,16 +459,25 @@ function playWordAudio(word, phonetic, lang) {
   const a = new Audio(url);
   audioEl = a;
   
-  a.play().catch(() => {
-    // Fallback para síntese de voz nativa caso o navegador bloqueie o streaming de áudio
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(word);
-      u.lang = lang === "hebrew" ? "he-IL" : "el-GR";
-      u.rate = 0.8;
-      window.speechSynthesis.speak(u);
-    }
-  });
+  const playPromise = a.play();
+  if (playPromise !== undefined) {
+    playPromise.catch(() => {
+      // Fallback 1: Web Speech API (Sintetizador nativo do telemóvel)
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(word);
+        u.lang = lang === "hebrew" ? "he-IL" : "el-GR";
+        u.rate = 0.75;
+        window.speechSynthesis.speak(u);
+      } else {
+        // Fallback 2: Fala a transliteração aportuguesada se nada mais funcionar
+        const u2 = new SpeechSynthesisUtterance(phonetic);
+        u2.lang = "pt-PT";
+        u2.rate = 0.8;
+        window.speechSynthesis.speak(u2);
+      }
+    });
+  }
 }
 
 function bookInfo(id){ return BOOKS.find(b => b.id === id) || BOOKS[0]; }
@@ -618,7 +627,7 @@ function lexShell(lex, inner){
         '<span class="text-[10px] font-bold text-emerald-700 bg-emerald-500/10 px-2 py-0.5 rounded">' + (lex.code || "Strong") + '</span>' +
         '<h4 class="' + lex.lang + ' text-2xl sm:text-3xl font-bold text-sky-800 dark:text-sky-300 mt-1">' + escapeHTML(lex.word) + '</h4>' +
       '</div>' +
-      '<button id="btnSpeakLex" onclick="playWordAudio(lastLex.word, lastLex.phonetic, lastLex.lang)" class="p-2.5 bg-sky-600 text-white rounded-xl text-sm active:scale-95 transition">🔊</button>' +
+      '<button id="btnSpeakLex" ontouchstart="playWordAudio(lastLex.word, lastLex.phonetic, lastLex.lang)" onclick="playWordAudio(lastLex.word, lastLex.phonetic, lastLex.lang)" class="px-3 py-2 bg-sky-600 active:bg-sky-700 text-white rounded-xl text-sm font-bold flex items-center gap-1 shadow transition active:scale-95"><span>🔊 Ouvir</span></button>' +
     '</div>' + inner + '</div>';
 }
 
