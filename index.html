@@ -2,264 +2,247 @@
 <html lang="pt-BR" class="light">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0284c7" />
 <title>Logos Nexus - Estudo Interlinear & Plataforma Exegética</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
-<script>
-tailwind.config = { darkMode: 'class' }
-</script>
+<script>tailwind.config = { darkMode: 'class' }</script>
 
-<!-- Leaflet CSS & JS para Mapas Geográficos -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-body { font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+
+:root { box-sizing: border-box; }
+html, body { overflow-x: hidden; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-text-size-adjust: 100%;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
 .hebrew { font-family: 'SBL Hebrew', 'Ezra SIL', 'Taamey Frank CLM', 'David', 'Times New Roman', serif; direction: rtl; }
 .greek  { font-family: 'SBL Greek', 'Galatia SIL', 'Gentium Plus', 'Times New Roman', serif; }
+
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
 .dark ::-webkit-scrollbar-thumb { background: #334155; }
-.lexdef i, .lexdef em { font-style: italic; }
-.lexdef b, .lexdef strong { font-weight: 700; }
-.lexdef { word-break: break-word; }
-#map { height: 180px; width: 100%; border-radius: 0.75rem; z-index: 10; }
+
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+#map { height: 170px; width: 100%; border-radius: 0.75rem; z-index: 10; }
+
+/* Alvos de toque nunca abaixo de 40px em ecrãs pequenos */
+@media (max-width: 640px) {
+  button, select, input { min-height: 40px; }
+  .tap-sm { min-height: 34px; }
+}
+
+/* Cabeçalho respeita o entalhe do ecrã */
+header { padding-top: env(safe-area-inset-top, 0px); }
 </style>
 </head>
 
 <body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 min-h-screen flex flex-col antialiased transition-colors">
 
-<!-- TELA DE LOGIN / AUTENTICAÇÃO -->
-<div id="authScreen" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
-  <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6">
+<!-- ============================ LOGIN ============================ -->
+<div id="authScreen" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+  <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6 my-auto">
     <div class="text-center space-y-2">
-      <div class="inline-flex p-3 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-2xl mb-1">
+      <div class="inline-flex p-3 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-2xl">
         <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
       </div>
-      <h2 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Logos Nexus</h2>
-      <p class="text-xs text-slate-500 dark:text-slate-400">Plataforma Exegética & Estudo Bíblico Avançado</p>
+      <h2 class="text-2xl font-bold tracking-tight">Logos Nexus</h2>
+      <p class="text-xs text-slate-500 dark:text-slate-400">Plataforma Exegética & Estudo Bíblico</p>
     </div>
 
     <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
       <div>
-        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">E-mail ou Usuário</label>
-        <input type="text" id="loginUser" required placeholder="exemplo@email.com" class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-sky-500" />
+        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">E-mail ou utilizador</label>
+        <input type="email" id="loginUser" required autocomplete="username" inputmode="email" placeholder="exemplo@email.com"
+               class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-base sm:text-sm outline-none focus:ring-2 focus:ring-sky-500" />
       </div>
       <div>
         <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Palavra-passe</label>
-        <input type="password" id="loginPass" required placeholder="••••••••" class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-sky-500" />
+        <input type="password" id="loginPass" required autocomplete="current-password" placeholder="••••••••"
+               class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-base sm:text-sm outline-none focus:ring-2 focus:ring-sky-500" />
       </div>
-      <button type="submit" class="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-sky-600/20">
-        Entrar no Portal
-      </button>
+      <button type="submit" class="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-sm font-bold shadow-lg shadow-sky-600/20">Entrar</button>
     </form>
 
-    <div class="text-center text-[11px] text-slate-400">
-      Área restrita e segura. Digite qualquer e-mail e senha para aceder.
-    </div>
+    <p class="text-center text-[11px] text-slate-400 leading-relaxed">
+      Aviso: este acesso é apenas local, guardado neste navegador. Não há verificação de palavra-passe num servidor, por isso não protege dados sensíveis.
+    </p>
   </div>
 </div>
 
-<!-- APLICAÇÃO PRINCIPAL -->
-<div id="appContainer" class="hidden flex-1 flex flex-col min-h-screen">
-  
-  <header class="border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-950/90 backdrop-blur sticky top-0 z-40 shadow-sm">
-    <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 flex flex-col sm:flex-row items-center justify-between gap-2">
+<!-- ============================ APP ============================ -->
+<div id="appContainer" class="hidden flex-1 flex-col min-h-screen">
 
-      <div class="w-full sm:w-auto flex items-center justify-between gap-2">
+  <header class="border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-950/90 backdrop-blur sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 space-y-2">
+
+      <!-- linha 1: marca + ações -->
+      <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-2 cursor-pointer shrink-0" onclick="goTo(1,1)">
           <svg class="w-5 h-5 text-sky-600 dark:text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-          <h1 class="text-sm sm:text-base font-bold tracking-tight text-slate-900 dark:text-slate-100">Logos Nexus</h1>
+          <h1 class="text-sm sm:text-base font-bold tracking-tight">Logos Nexus</h1>
         </div>
-        
-        <div class="flex items-center gap-1 sm:hidden">
-          <button onclick="toggleTheme()" class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">
-            <span id="themeIconMobile" class="text-xs">🌙</span>
-          </button>
-          <button onclick="handleLogout()" class="px-2 py-1 text-[11px] rounded-lg font-medium border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400">
-            Sair
-          </button>
+
+        <div class="flex items-center gap-1.5">
+          <button id="btnInterlinear" onclick="toggleInterlinear()" class="tap-sm px-2.5 py-1.5 text-[11px] sm:text-xs rounded-lg font-semibold border transition bg-sky-600 text-white border-sky-500">Interlinear</button>
+          <button id="btnStrong" onclick="toggleStrong()" class="tap-sm px-2.5 py-1.5 text-[11px] sm:text-xs rounded-lg font-medium border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">Strong: off</button>
+          <button onclick="toggleTheme()" class="tap-sm w-9 h-9 flex items-center justify-center rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800" title="Tema"><span id="themeIcon" class="text-sm">🌙</span></button>
+          <button onclick="handleLogout()" class="tap-sm px-2.5 py-1.5 text-[11px] sm:text-xs rounded-lg font-medium border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400">Sair</button>
         </div>
       </div>
 
-      <div class="flex items-center gap-1.5 w-full sm:w-auto justify-center min-w-0">
-        <select id="versionSelect" onchange="changeVersion()" class="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-sky-500 font-medium flex-1 sm:flex-initial max-w-[120px] sm:max-w-[140px] truncate">
+      <!-- linha 2: seletores -->
+      <div class="flex items-center gap-1.5">
+        <select id="versionSelect" onchange="changeVersion()" class="flex-1 min-w-0 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-sky-500 font-medium truncate">
           <optgroup label="Português">
-            <option value="ACF11" selected>ACF - Almeida</option>
-            <option value="ARC09">ARC - Corrigida</option>
-            <option value="ARA">ARA - Atualizada</option>
+            <option value="ACF11" selected>ACF - Almeida Corrigida Fiel</option>
+            <option value="ARC09">ARC - Almeida Corrigida</option>
+            <option value="ARA">ARA - Almeida Atualizada</option>
             <option value="NAA">NAA - Nova Almeida</option>
-            <option value="NVIPT">NVI - Internacional</option>
-            <option value="NTLH">NTLH - Linguagem Hoje</option>
-            <option value="KJA">KJA - King James</option>
-            <option value="TB10">TB - Brasileira</option>
+            <option value="NVIPT">NVI - Nova Versão Internacional</option>
+            <option value="NTLH">NTLH - Linguagem de Hoje</option>
+            <option value="KJA">KJA - King James Atualizada</option>
+            <option value="TB10">TB - Tradução Brasileira</option>
           </optgroup>
           <optgroup label="English">
             <option value="KJV">KJV - King James</option>
             <option value="WEB">WEB - World English</option>
-            <option value="YLT">YLT - Young's</option>
+            <option value="YLT">YLT - Young's Literal</option>
           </optgroup>
         </select>
-
-        <select id="bookSelect" onchange="changeBook()" class="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-sky-500 font-medium flex-1 sm:flex-initial max-w-[110px] sm:max-w-[120px] truncate"></select>
-
-        <select id="chapterSelect" onchange="changeChapter()" class="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-sky-500 font-medium w-20 sm:w-auto"></select>
+        <select id="bookSelect" onchange="changeBook()" class="flex-1 min-w-0 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-sky-500 font-medium truncate"></select>
+        <select id="chapterSelect" onchange="changeChapter()" class="w-[84px] shrink-0 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-sky-500 font-medium"></select>
       </div>
-
-      <div class="hidden sm:flex items-center gap-1.5 shrink-0">
-        <button id="btnInterlinear" onclick="toggleInterlinear()" class="px-2.5 py-1.5 text-xs rounded-lg font-semibold border transition bg-sky-600 text-white border-sky-500">
-          Interlinear
-        </button>
-        <button id="btnStrong" onclick="toggleStrong()" class="px-2.5 py-1.5 text-xs rounded-lg font-medium border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">
-          Strong: off
-        </button>
-        <button onclick="toggleTheme()" class="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Alternar Tema">
-          <span id="themeIcon" class="text-sm">🌙</span>
-        </button>
-        <button onclick="handleLogout()" class="px-2.5 py-1.5 text-xs rounded-lg font-medium border border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition">
-          Sair
-        </button>
-      </div>
-
-      <div class="flex sm:hidden items-center justify-center gap-1 w-full pt-1 border-t border-slate-100 dark:border-slate-800/80">
-        <button id="btnInterlinearMob" onclick="toggleInterlinear()" class="flex-1 py-1 text-[11px] rounded-md font-semibold border text-center bg-sky-600 text-white border-sky-500">
-          Interlinear: On
-        </button>
-        <button id="btnStrongMob" onclick="toggleStrong()" class="flex-1 py-1 text-[11px] rounded-md font-medium border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-center">
-          Strong: Off
-        </button>
-      </div>
-
     </div>
   </header>
 
   <div class="flex-1 max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-5 p-2 sm:p-6">
 
-    <main class="lg:col-span-7 xl:col-span-8 bg-white dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 sm:p-6 flex flex-order-2 lg:order-1 flex-col shadow-sm">
-      <div class="flex items-start justify-between pb-3 mb-4 border-b border-slate-200 dark:border-slate-800">
-        <div>
-          <h2 id="passageTitle" class="text-xl sm:text-2xl font-bold tracking-tight">Carregando…</h2>
+    <!-- ===== Texto: primeiro no telemóvel ===== -->
+    <main class="order-1 lg:col-span-7 xl:col-span-8 bg-white dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 sm:p-6 flex flex-col shadow-sm">
+      <div class="flex items-start justify-between gap-2 pb-3 mb-4 border-b border-slate-200 dark:border-slate-800">
+        <div class="min-w-0">
+          <h2 id="passageTitle" class="text-lg sm:text-2xl font-bold tracking-tight truncate">Carregando…</h2>
           <p id="passageSub" class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5"></p>
         </div>
-        <span id="versionBadge" class="px-2 py-0.5 bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20 rounded-md text-[11px] font-bold uppercase">ACF</span>
+        <span id="versionBadge" class="shrink-0 px-2 py-0.5 bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20 rounded-md text-[11px] font-bold uppercase">ACF</span>
       </div>
 
-      <div id="bibleText" class="space-y-4 sm:space-y-5 leading-relaxed text-sm sm:text-base flex-1"></div>
+      <div id="bibleText" class="space-y-3 sm:space-y-5 leading-relaxed text-[15px] sm:text-base flex-1"></div>
 
-      <div class="flex justify-between items-center pt-4 mt-4 border-t border-slate-200 dark:border-slate-800 text-xs sm:text-sm">
-        <button onclick="navigate(-1)" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg font-medium">← Anterior</button>
-        <button onclick="navigate(1)" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg font-medium">Próximo →</button>
+      <div class="flex justify-between items-center gap-2 pt-4 mt-4 border-t border-slate-200 dark:border-slate-800 text-xs sm:text-sm">
+        <button onclick="navigate(-1)" class="flex-1 sm:flex-initial px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg font-medium">← Anterior</button>
+        <button onclick="navigate(1)" class="flex-1 sm:flex-initial px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg font-medium">Próximo →</button>
       </div>
     </main>
 
-    <aside class="lg:col-span-5 xl:col-span-4 order-1 lg:order-2">
-      <div class="bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 sm:p-4 lg:sticky lg:top-20 flex flex-col h-[520px] sm:h-[680px] shadow-sm">
-        
+    <!-- ===== Painel lateral: abaixo no telemóvel ===== -->
+    <aside id="sidePanel" class="order-2 lg:col-span-5 xl:col-span-4 scroll-mt-28">
+      <div class="bg-white dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 sm:p-4 lg:sticky lg:top-24 flex flex-col max-h-[75vh] lg:h-[calc(100vh-8rem)] shadow-sm">
+
         <div class="flex border-b border-slate-200 dark:border-slate-800 pb-2 gap-1 shrink-0 overflow-x-auto no-scrollbar">
-          <button id="tabBtnLex" onclick="switchTab('Lex')" class="flex-1 min-w-[55px] py-1.5 px-1 text-[10px] sm:text-[11px] rounded-md font-semibold flex flex-col items-center justify-center gap-0.5 shrink-0">
-            <span>📖</span><span>Dicionário</span>
-          </button>
-          <button id="tabBtnSearch" onclick="switchTab('Search')" class="flex-1 min-w-[50px] py-1.5 px-1 text-[10px] sm:text-[11px] rounded-md font-semibold flex flex-col items-center justify-center gap-0.5 shrink-0">
-            <span>🔍</span><span>Buscar</span>
-          </button>
-          <button id="tabBtnTopics" onclick="switchTab('Topics')" class="flex-1 min-w-[50px] py-1.5 px-1 text-[10px] sm:text-[11px] rounded-md font-semibold flex flex-col items-center justify-center gap-0.5 shrink-0">
-            <span>📚</span><span>Temas</span>
-          </button>
-          <button id="tabBtnResources" onclick="switchTab('Resources')" class="flex-1 min-w-[55px] py-1.5 px-1 text-[10px] sm:text-[11px] rounded-md font-semibold flex flex-col items-center justify-center gap-0.5 shrink-0">
-            <span>🗺️</span><span>Recursos</span>
-          </button>
-          <button id="tabBtnNotes" onclick="switchTab('Notes')" class="flex-1 min-w-[45px] py-1.5 px-1 text-[10px] sm:text-[11px] rounded-md font-semibold flex flex-col items-center justify-center gap-0.5 shrink-0">
-            <span>📝</span><span>Notas</span>
-          </button>
-          <button id="tabBtnAi" onclick="switchTab('Ai')" class="flex-1 min-w-[40px] py-1.5 px-1 text-[10px] sm:text-[11px] rounded-md font-semibold flex flex-col items-center justify-center gap-0.5 shrink-0">
-            <span>🤖</span><span>IA</span>
-          </button>
+          <button id="tabBtnLex" onclick="switchTab('Lex')" class="tabbtn"><span>📖</span><span>Dicionário</span></button>
+          <button id="tabBtnSearch" onclick="switchTab('Search')" class="tabbtn"><span>🔍</span><span>Buscar</span></button>
+          <button id="tabBtnTopics" onclick="switchTab('Topics')" class="tabbtn"><span>📚</span><span>Temas</span></button>
+          <button id="tabBtnResources" onclick="switchTab('Resources')" class="tabbtn"><span>🗺️</span><span>Recursos</span></button>
+          <button id="tabBtnNotes" onclick="switchTab('Notes')" class="tabbtn"><span>📝</span><span>Notas</span></button>
+          <button id="tabBtnAi" onclick="switchTab('Ai')" class="tabbtn"><span>🤖</span><span>IA</span></button>
         </div>
 
-        <div id="tabLex" class="py-3 overflow-y-auto flex-1">
+        <!-- Dicionário -->
+        <div id="tabLex" class="py-3 overflow-y-auto flex-1 min-h-0">
           <div class="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-center space-y-2">
-            <p class="text-xs sm:text-sm font-semibold">Toque numa palavra original</p>
-            <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Cada palavra hebraica ou grega abaixo do versículo possui Strong. Ao tocar, exibe o verbete (BDB/Thayer), transliteração e áudio.</p>
+            <p class="text-sm font-semibold">Toque numa palavra original</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">O verbete (BDB/Thayer) aparece aqui já traduzido para português, com transliteração, leitura figurada e áudio.</p>
           </div>
           <div id="voiceStatus" class="mt-3 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800"></div>
         </div>
 
+        <!-- Busca -->
         <div id="tabSearch" class="py-3 flex-1 flex-col hidden overflow-hidden min-h-0">
-          <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mb-2 shrink-0">Pesquise por termo exato em toda a Bíblia.</p>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mb-2 shrink-0">Pesquisa por termo em toda a Bíblia.</p>
           <div class="flex gap-1.5 mb-2 shrink-0">
-            <input type="text" id="searchInput" placeholder="Ex: graça, princípio..." class="flex-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-sky-500" onkeydown="if(event.key==='Enter') executeSearch()" />
-            <button onclick="executeSearch()" class="px-3 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold">Buscar</button>
+            <input type="search" id="searchInput" enterkeyhint="search" placeholder="Ex: graça, princípio…" class="flex-1 min-w-0 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-base sm:text-xs outline-none focus:ring-2 focus:ring-sky-500" onkeydown="if(event.key==='Enter') executeSearch()" />
+            <button onclick="executeSearch()" class="px-3 py-2 bg-sky-600 text-white rounded-xl text-xs font-bold shrink-0">Buscar</button>
           </div>
-          <div id="searchOutput" class="p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs leading-relaxed flex-1 overflow-y-auto space-y-2">
-            <span class="text-slate-400">Digite um termo acima.</span>
+          <div id="searchOutput" class="p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs leading-relaxed flex-1 overflow-y-auto min-h-0">
+            <span class="text-slate-400">Escreva um termo acima.</span>
           </div>
         </div>
 
+        <!-- Temas -->
         <div id="tabTopics" class="py-3 flex-1 flex-col hidden overflow-hidden min-h-0">
-          <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mb-2 shrink-0">Pesquisa temática e esboços de pregação.</p>
-          <div class="flex flex-wrap gap-1 mb-2.5 shrink-0">
-            <button onclick="quickTopic('Ofertas e Dízimos no AT e NT')" class="px-2 py-1 bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 rounded-md text-[10px] font-bold">💰 Ofertas</button>
-            <button onclick="quickTopic('Perdão, Graça e Reconciliação')" class="px-2 py-1 bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 rounded-md text-[10px] font-bold">🕊️ Perdão</button>
-            <button onclick="quickTopic('A Aliança Bíblica e Promessas de Deus')" class="px-2 py-1 bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 rounded-md text-[10px] font-bold">📜 Aliança</button>
-            <button onclick="quickTopic('Oração, Jejum e Intercessão')" class="px-2 py-1 bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 rounded-md text-[10px] font-bold">🙏 Oração</button>
+          <div class="flex flex-wrap gap-1 mb-2 shrink-0">
+            <button onclick="quickTopic('Ofertas e Dízimos no AT e NT')" class="tap-sm px-2 py-1 bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 rounded-md text-[10px] font-bold">💰 Ofertas</button>
+            <button onclick="quickTopic('Perdão, Graça e Reconciliação')" class="tap-sm px-2 py-1 bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 rounded-md text-[10px] font-bold">🕊️ Perdão</button>
+            <button onclick="quickTopic('A Aliança Bíblica e as Promessas de Deus')" class="tap-sm px-2 py-1 bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 rounded-md text-[10px] font-bold">📜 Aliança</button>
+            <button onclick="quickTopic('Oração, Jejum e Intercessão')" class="tap-sm px-2 py-1 bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20 rounded-md text-[10px] font-bold">🙏 Oração</button>
           </div>
           <div class="flex gap-1.5 mb-2 shrink-0">
-            <input type="text" id="topicInput" placeholder="Digite o tema..." class="flex-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-sky-500" />
-            <button onclick="generateTopicStudy()" class="px-3 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold">Gerar</button>
+            <input type="text" id="topicInput" placeholder="Escreva o tema…" class="flex-1 min-w-0 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-base sm:text-xs outline-none focus:ring-2 focus:ring-sky-500" />
+            <button onclick="generateTopicStudy()" class="px-3 py-2 bg-sky-600 text-white rounded-xl text-xs font-bold shrink-0">Gerar</button>
           </div>
           <div class="flex justify-between items-center mb-1 shrink-0">
-            <span class="text-[10px] text-slate-400">Resultado:</span>
-            <button onclick="copyTopicOutput()" id="btnCopyTopic" class="text-[10px] px-2 py-0.5 bg-slate-200 dark:bg-slate-800 hover:bg-sky-600 hover:text-white rounded transition font-medium">📋 Copiar</button>
+            <span class="text-[10px] text-slate-400">Resultado</span>
+            <button onclick="copyTopicOutput()" id="btnCopyTopic" class="tap-sm text-[10px] px-2 py-0.5 bg-slate-200 dark:bg-slate-800 rounded font-medium">📋 Copiar</button>
           </div>
-          <div id="topicOutput" class="p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs leading-relaxed whitespace-pre-wrap flex-1 overflow-y-auto">
-            <span class="text-slate-400">Selecione um tema ou digite um assunto.</span>
+          <div id="topicOutput" class="p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs leading-relaxed whitespace-pre-wrap flex-1 overflow-y-auto min-h-0">
+            <span class="text-slate-400">Escolha um tema ou escreva um assunto.</span>
           </div>
         </div>
 
-        <div id="tabResources" class="py-3 flex-1 flex-col hidden overflow-y-auto space-y-3">
+        <!-- Recursos -->
+        <div id="tabResources" class="py-3 flex-1 hidden overflow-y-auto space-y-3 min-h-0">
           <div class="p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
-            <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1">📍 Geografia & Locais</h4>
+            <h4 class="text-xs font-bold mb-2">📍 Geografia</h4>
             <div id="map"></div>
-            <p id="mapInfo" class="text-[10px] text-slate-400 mt-1.5">Carregando...</p>
+            <p id="mapInfo" class="text-[10px] text-slate-400 mt-1.5">A carregar…</p>
           </div>
           <div class="p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
-            <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">🌳 Genealogia Messiânica</h4>
+            <h4 class="text-xs font-bold mb-2">🌳 Genealogia</h4>
             <select id="genealogySelect" onchange="showGenealogy()" class="w-full p-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs outline-none">
-              <option value="messianic">Linha Messiânica (Adão -> Jesus)</option>
-              <option value="patriarchs">Os Patriarcas (Abraão, Isaque, Jacó)</option>
+              <option value="messianic">Linha messiânica (Adão → Jesus)</option>
+              <option value="patriarchs">Os patriarcas</option>
               <option value="kings">Reis de Judá e Israel</option>
             </select>
             <div id="genealogyDisplay" class="mt-2 text-[11px] leading-relaxed p-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg font-mono overflow-x-auto"></div>
           </div>
           <div class="p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
-            <h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">🔗 Passagens Paralelas</h4>
-            <p class="text-[10px] text-slate-500 dark:text-slate-400 mb-2">Toque em qualquer versículo no texto principal.</p>
+            <h4 class="text-xs font-bold mb-2">🔗 Passagens paralelas</h4>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400 mb-2">Toque no número de um versículo no texto.</p>
             <div id="crossRefDisplay" class="text-xs text-slate-600 dark:text-slate-300">Nenhum versículo selecionado.</div>
           </div>
         </div>
 
-        <div id="tabNotes" class="py-3 flex-1 flex-col hidden">
-          <label class="block text-xs font-semibold mb-1.5 text-slate-600 dark:text-slate-400">Notas deste capítulo:</label>
-          <textarea id="notes" oninput="saveNotes()" class="w-full flex-1 min-h-[180px] p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs sm:text-sm outline-none focus:ring-2 focus:ring-sky-500 resize-none" placeholder="Suas reflexões e anotações…"></textarea>
-          <span class="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1.5">Salvo automaticamente</span>
+        <!-- Notas -->
+        <div id="tabNotes" class="py-3 flex-1 flex-col hidden min-h-0">
+          <label class="block text-xs font-semibold mb-1.5 text-slate-600 dark:text-slate-400">Notas deste capítulo</label>
+          <textarea id="notes" oninput="saveNotes()" class="w-full flex-1 min-h-[160px] p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-base sm:text-sm outline-none focus:ring-2 focus:ring-sky-500 resize-none" placeholder="As suas reflexões…"></textarea>
+          <span class="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1.5">Guardado automaticamente</span>
         </div>
 
+        <!-- IA -->
         <div id="tabAi" class="py-3 flex-1 flex-col hidden overflow-hidden min-h-0">
-          <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-1.5 shrink-0">Assistente exegético (Google Gemini).</p>
           <div class="flex gap-1.5 mb-1.5 shrink-0">
-            <input type="password" id="geminiKey" oninput="saveKey()" placeholder="API Key Google AI Studio" class="flex-1 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-sky-500" />
-            <button onclick="clearKey()" class="px-2 py-1 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl text-[10px] font-medium">Limpar</button>
+            <input type="password" id="geminiKey" oninput="saveKey()" placeholder="API Key do Google AI Studio" class="flex-1 min-w-0 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-base sm:text-xs outline-none focus:ring-2 focus:ring-sky-500" />
+            <button onclick="clearKey()" class="px-2 py-1 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl text-[10px] font-medium shrink-0">Limpar</button>
           </div>
           <div id="aiModelInfo" class="text-[10px] text-slate-400 mb-1.5 shrink-0"></div>
-          <textarea id="aiPrompt" class="w-full h-16 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none mb-1.5 focus:ring-2 focus:ring-sky-500 shrink-0 resize-none" placeholder="Ex: força do termo בָּרָא em Gênesis 1:1"></textarea>
+          <textarea id="aiPrompt" class="w-full h-16 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-base sm:text-xs outline-none mb-1.5 focus:ring-2 focus:ring-sky-500 shrink-0 resize-none" placeholder="Ex: a força do termo בָּרָא em Gênesis 1:1"></textarea>
           <div class="flex gap-1.5 mb-1.5 shrink-0">
-            <button onclick="askAI()" class="flex-1 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold">Consultar</button>
-            <button onclick="askAI('chapter')" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold">Capítulo</button>
+            <button onclick="askAI()" class="flex-1 py-2 bg-sky-600 text-white rounded-xl text-xs font-bold">Consultar</button>
+            <button onclick="askAI('chapter')" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold shrink-0">Capítulo</button>
           </div>
-          <div id="aiResponse" class="mt-1 p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs leading-relaxed whitespace-pre-wrap hidden flex-1 overflow-y-auto"></div>
+          <div id="aiResponse" class="p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs leading-relaxed whitespace-pre-wrap hidden flex-1 overflow-y-auto min-h-0"></div>
         </div>
 
       </div>
@@ -267,38 +250,33 @@ body { font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color:
   </div>
 
   <footer class="max-w-7xl mx-auto w-full px-4 pb-6 text-[10px] sm:text-[11px] text-slate-400 leading-relaxed text-center sm:text-left">
-    Texto original: WLC (AT) e Tischendorf (NT). Léxico: BDB / Thayer. Dados servidos por bolls.life.
+    Texto original: Códice de Leningrado vocalizado (AT) e Tischendorf (NT), ambos etiquetados com números de Strong. Léxico: Brown-Driver-Briggs / Thayer. Dados servidos pela API pública bolls.life.
   </footer>
 </div>
 
 <script>
-function checkAuth() {
-  const session = localStorage.getItem("logos_nexus_auth");
-  if (session === "true") {
-    document.getElementById("authScreen").classList.add("hidden");
-    document.getElementById("appContainer").classList.remove("hidden");
-    initApp();
-  } else {
-    document.getElementById("authScreen").classList.remove("hidden");
-    document.getElementById("appContainer").classList.add("hidden");
-  }
-}
+/* estilo partilhado dos separadores */
+const TAB_BASE = "tabbtn flex-none w-[70px] sm:w-auto sm:flex-1 py-1.5 px-1 text-[10px] sm:text-[11px] rounded-md transition flex flex-col items-center justify-center gap-0.5";
 
+/* ===================== AUTENTICAÇÃO LOCAL ===================== */
+function checkAuth() {
+  const ok = localStorage.getItem("logos_nexus_auth") === "true";
+  document.getElementById("authScreen").classList.toggle("hidden", ok);
+  const app = document.getElementById("appContainer");
+  app.classList.toggle("hidden", !ok);
+  app.classList.toggle("flex", ok);
+  if (ok) initApp();
+}
 function handleLogin(e) {
   e.preventDefault();
-  const user = document.getElementById("loginUser").value.trim();
-  const pass = document.getElementById("loginPass").value.trim();
-  if (user && pass) {
-    localStorage.setItem("logos_nexus_auth", "true");
-    checkAuth();
-  }
+  unlockAudio();                      // o gesto de login serve para destravar o áudio
+  const u = document.getElementById("loginUser").value.trim();
+  const p = document.getElementById("loginPass").value.trim();
+  if (u && p) { localStorage.setItem("logos_nexus_auth", "true"); checkAuth(); }
 }
+function handleLogout() { localStorage.removeItem("logos_nexus_auth"); checkAuth(); }
 
-function handleLogout() {
-  localStorage.removeItem("logos_nexus_auth");
-  checkAuth();
-}
-
+/* ===================== LIVROS ===================== */
 const BOOKS = [
  ["Gênesis",50,"OT"],["Êxodo",40,"OT"],["Levítico",27,"OT"],["Números",36,"OT"],["Deuteronômio",34,"OT"],
  ["Josué",24,"OT"],["Juízes",21,"OT"],["Rute",4,"OT"],["1 Samuel",31,"OT"],["2 Samuel",24,"OT"],
@@ -320,45 +298,28 @@ const API = "https://bolls.life";
 const ORIGINAL_OT = "WLCa";
 const ORIGINAL_NT = "TISCH";
 
-const state = {
-  version: "ACF11",
-  book: 1,
-  chapter: 1,
-  interlinear: true,
-  showStrong: false
-};
-
-const cache = {};
-const lexCache = {};
-let lastLex = null;
-let leafletMap = null;
-let leafletMarker = null;
+const state = { version:"ACF11", book:1, chapter:1, interlinear:true, showStrong:false };
+const cache = {}, lexCache = {}, trCache = {};
+let lastLex = null, leafletMap = null, leafletMarker = null;
 
 async function getJSON(url){
   if (cache[url]) return cache[url];
   const r = await fetch(url);
   if (!r.ok) throw new Error("HTTP " + r.status);
-  const data = await r.json();
-  cache[url] = data;
-  return data;
+  const d = await r.json();
+  cache[url] = d;
+  return d;
 }
+function escapeHTML(s){ return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
+function stripTags(h){ return (h||"").replace(/<S>\s*\d+\s*<\/S>/gi,"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim(); }
 
-function escapeHTML(s){
-  return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
-}
-
-function stripTags(html){
-  return (html || "").replace(/<S>\s*\d+\s*<\/S>/gi, "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
-}
-
+/* ===================== TEXTO ORIGINAL ===================== */
 function parseOriginal(html){
   const doc = new DOMParser().parseFromString("<div>" + html + "</div>", "text/html");
   const root = doc.body.firstElementChild;
   const words = [];
   let cur = null;
-
   const open = () => { cur = { text:"", strongs:[] }; words.push(cur); return cur; };
-
   function addText(t){
     t.split(/(\s+)/).forEach(p => {
       if (p === "") return;
@@ -367,70 +328,68 @@ function parseOriginal(html){
       cur.text += p;
     });
   }
-
-  (function walk(node){
-    node.childNodes.forEach(c => {
+  (function walk(n){
+    n.childNodes.forEach(c => {
       if (c.nodeType === 3) addText(c.nodeValue);
       else if (c.nodeName === "S") {
-        const n = (c.textContent || "").trim().replace(/\D/g, "");
-        if (!n) return;
+        const num = (c.textContent || "").trim().replace(/\D/g, "");
+        if (!num) return;
         if (!cur) open();
-        cur.strongs.push(n);
-      }
-      else if (c.nodeName === "BR") cur = null;
+        cur.strongs.push(num);
+      } else if (c.nodeName === "BR") cur = null;
       else walk(c);
     });
   })(root);
-
-  return words.map(w => ({ text: w.text.trim(), strongs: w.strongs })).filter(w => w.text !== "");
+  return words.map(w => ({ text:w.text.trim(), strongs:w.strongs })).filter(w => w.text !== "");
 }
 
-const HEB_MAP = { "א":"ʾ","ב":"b","ג":"g","ד":"d","ה":"h","ו":"w","ז":"z","ח":"ch","ט":"ţ","י":"y","כ":"k","ך":"k","ל":"l","מ":"m","ם":"m","נ":"n","ן":"n","ס":"s","ע":"ʿ","פ":"p","ף":"f","צ":"ts","ץ":"ts","ק":"q","ר":"r","ש":"sh","שׂ":"s","ת":"t","־":"-","\u05B0":"ə","\u05B1":"e","\u05B2":"a","\u05B3":"o","\u05B4":"i","\u05B5":"e","\u05B6":"e","\u05B7":"a","\u05B8":"a","\u05B9":"o","\u05BA":"o","\u05BB":"u" };
+/* ===================== TRANSLITERAÇÃO ===================== */
+const HEB_MAP = { "א":"ʾ","ב":"b","ג":"g","ד":"d","ה":"h","ו":"w","ז":"z","ח":"ch","ט":"ţ","י":"y","כ":"k","ך":"k","ל":"l","מ":"m","ם":"m","נ":"n","ן":"n","ס":"s","ע":"ʿ","פ":"p","ף":"f","צ":"ts","ץ":"ts","ק":"q","ר":"r","ש":"sh","ת":"t","־":"-","\u05B0":"ə","\u05B1":"e","\u05B2":"a","\u05B3":"o","\u05B4":"i","\u05B5":"e","\u05B6":"e","\u05B7":"a","\u05B8":"a","\u05B9":"o","\u05BA":"o","\u05BB":"u" };
 function translitHebrew(s){
   let out = "";
   for (const ch of s.normalize("NFC")) {
-    const code = ch.codePointAt(0);
-    if (code >= 0x0591 && code <= 0x05AF) continue;
-    if (ch === "\u05BC" || ch === "\u05BD" || ch === "\u05BF" || ch === "\u05C1" || ch === "\u05C2") continue;
+    const c = ch.codePointAt(0);
+    if (c >= 0x0591 && c <= 0x05AF) continue;
+    if ("\u05BC\u05BD\u05BF\u05C1\u05C2".includes(ch)) continue;
     out += (HEB_MAP[ch] !== undefined) ? HEB_MAP[ch] : (/[\u0590-\u05FF]/.test(ch) ? "" : ch);
   }
   return out;
 }
-
 const GRK_MAP = { "α":"a","β":"b","γ":"g","δ":"d","ε":"e","ζ":"z","η":"ē","θ":"th","ι":"i","κ":"k","λ":"l","μ":"m","ν":"n","ξ":"x","ο":"o","π":"p","ρ":"r","σ":"s","ς":"s","τ":"t","υ":"y","φ":"ph","χ":"ch","ψ":"ps","ω":"ō" };
 function translitGreek(s){
   let out = "";
   for (const ch of s.normalize("NFD")) {
-    const code = ch.codePointAt(0);
-    if (code >= 0x0300 && code <= 0x036F) continue;
+    const c = ch.codePointAt(0);
+    if (c >= 0x0300 && c <= 0x036F) continue;
     const low = ch.toLowerCase();
-    out += (GRK_MAP[low] !== undefined) ? (ch === low ? GRK_MAP[low] : GRK_MAP[low].charAt(0).toUpperCase() + GRK_MAP[low].slice(1)) : ch;
+    out += (GRK_MAP[low] !== undefined)
+      ? (ch === low ? GRK_MAP[low] : GRK_MAP[low].charAt(0).toUpperCase() + GRK_MAP[low].slice(1))
+      : ch;
   }
   return out;
 }
+function translit(w, lang){ return lang === "hebrew" ? translitHebrew(w) : translitGreek(w); }
 
-function translit(word, lang){ return lang === "hebrew" ? translitHebrew(word) : translitGreek(word); }
-
-const HEB_PT_CONS = { "א":"", "b":"b", "ג":"g", "ד":"d", "ה":"h", "ו":"v", "ז":"z", "ח":"rr", "ט":"t", "י":"i", "כ":"c", "ך":"rr", "ל":"l", "מ":"m", "ם":"m", "נ":"n", "ן":"n", "ס":"ss", "ע":"", "פ":"f", "ף":"f", "צ":"ts", "ץ":"ts", "ק":"k", "ר":"r", "ש":"ch", "ת":"t" };
-const HEB_PT_VOW = { "\u05B0":"e", "\u05B1":"e", "\u05B2":"a", "\u05B3":"o", "\u05B4":"i", "\u05B5":"ê", "\u05B6":"é", "\u05B7":"a", "\u05B8":"á", "\u05B9":"ô", "\u05BA":"ô", "\u05BB":"u" };
+/* ===================== LEITURA FIGURADA EM PORTUGUÊS ===================== */
+const HEB_PT_CONS = { "א":"", "ב":"b", "ג":"g", "ד":"d", "ה":"h", "ו":"v", "ז":"z", "ח":"rr", "ט":"t",
+  "י":"i", "כ":"c", "ך":"rr", "ל":"l", "מ":"m", "ם":"m", "נ":"n", "ן":"n", "ס":"ss", "ע":"",
+  "פ":"f", "ף":"f", "צ":"ts", "ץ":"ts", "ק":"k", "ר":"r", "ש":"ch", "ת":"t" };
+const HEB_PT_VOW = { "\u05B0":"e","\u05B1":"e","\u05B2":"a","\u05B3":"o","\u05B4":"i","\u05B5":"ê","\u05B6":"é","\u05B7":"a","\u05B8":"á","\u05B9":"ô","\u05BA":"ô","\u05BB":"u" };
 function phoneticHebrew(s){
   let out = "";
-  const chars = [...s.normalize("NFC")];
-  for (let i = 0; i < chars.length; i++) {
-    const ch = chars[i];
-    const code = ch.codePointAt(0);
-    if (code >= 0x0591 && code <= 0x05AF) continue;
-    if (ch === "\u05BC") { out = out.replace(/(b|c|f)$/, m => ({ b:"b", c:"c", f:"p" }[m])); continue; }
-    if (ch === "\u05BD" || ch === "\u05BF" || ch === "\u05C1") continue;
-    if (ch === "\u05C2") { out = out.replace(/ch$/, "ss"); continue; }
+  for (const ch of [...s.normalize("NFC")]) {
+    const c = ch.codePointAt(0);
+    if (c >= 0x0591 && c <= 0x05AF) continue;
+    if (ch === "\u05BC") { out = out.replace(/f$/, "p"); continue; }     // daguesh endurece פ
+    if ("\u05BD\u05BF\u05C1".includes(ch)) continue;
+    if (ch === "\u05C2") { out = out.replace(/ch$/, "ss"); continue; }   // sin
     if (HEB_PT_VOW[ch] !== undefined) { out += HEB_PT_VOW[ch]; continue; }
     if (HEB_PT_CONS[ch] !== undefined) { out += HEB_PT_CONS[ch]; continue; }
-    if (ch === "־" || ch === "-") { out += "-"; continue; }
+    if (ch === "־" || ch === "-") out += "-";
   }
-  return out.replace(/-+$/, "").replace(/^-+/, "") || "—";
+  return out.replace(/^-+|-+$/g, "") || "—";
 }
-
-const GRK_PT_DIG = { "αι":"e", "ει":"i", "οι":"i", "υι":"i", "ου":"u", "αυ":"av", "ευ":"ev", "ηυ":"iv", "γγ":"ng", "γκ":"gu", "μπ":"b", "ντ":"d" };
+const GRK_PT_DIG = { "αι":"e","ει":"i","οι":"i","υι":"i","ου":"u","αυ":"av","ευ":"ev","ηυ":"iv","γγ":"ng","γκ":"gu","μπ":"b","ντ":"d" };
 const GRK_PT = { "α":"a","β":"v","γ":"g","δ":"d","ε":"e","ζ":"z","η":"i","θ":"t","ι":"i","κ":"c","λ":"l","μ":"m","ν":"n","ξ":"x","ο":"o","π":"p","ρ":"r","σ":"s","ς":"s","τ":"t","υ":"i","φ":"f","χ":"rr","ψ":"ps","ω":"ó" };
 function phoneticGreek(s){
   const base = [...s.normalize("NFD")].filter(c => !(c.codePointAt(0) >= 0x0300 && c.codePointAt(0) <= 0x036F)).join("").toLowerCase();
@@ -438,51 +397,102 @@ function phoneticGreek(s){
   while (i < base.length) {
     const two = base.slice(i, i + 2);
     if (GRK_PT_DIG[two] !== undefined) { out += GRK_PT_DIG[two]; i += 2; continue; }
-    const one = base[i];
-    out += (GRK_PT[one] !== undefined) ? GRK_PT[one] : one;
+    out += (GRK_PT[base[i]] !== undefined) ? GRK_PT[base[i]] : base[i];
     i++;
   }
   return out || "—";
 }
-function phoneticPT(word, lang){ return lang === "hebrew" ? phoneticHebrew(word) : phoneticGreek(word); }
+function phoneticPT(w, lang){ return lang === "hebrew" ? phoneticHebrew(w) : phoneticGreek(w); }
 
-let audioEl = null;
-function remoteTTS(word, lang){
-  return new Promise((resolve, reject) => {
-    const q = word.slice(0, 180);
-    const tl = lang === "hebrew" ? "iw" : "el";
-    const url = "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&ttsspeed=0.4&tl=" + tl + "&q=" + encodeURIComponent(q);
-    if (audioEl) { audioEl.pause(); audioEl = null; }
-    const a = new Audio();
-    a.preload = "auto";
-    let settled = false;
-    const fail = () => { if (!settled) { settled = true; reject(new Error("tts")); } };
-    a.onerror = fail;
-    a.onplaying = () => { if (!settled) { settled = true; resolve(true); } };
-    a.onended = () => { audioEl = null; };
-    a.src = url;
-    audioEl = a;
-    a.play().catch(fail);
-    setTimeout(() => { if (!settled) fail(); }, 4000);
-  });
+/* ===================== ÁUDIO (compatível com telemóvel) =====================
+   O iOS e o Android só deixam tocar som dentro de um gesto do utilizador.
+   Por isso: (1) destravamos os dois motores no primeiro toque da sessão;
+   (2) o elemento <audio> é criado e reaproveitado, nunca recriado dentro de
+   uma promessa; (3) a síntese local é chamada de imediato, sem await pelo meio.
+   ============================================================================ */
+let audioUnlocked = false;
+let sharedAudio = null;
+
+function getAudioEl(){
+  if (!sharedAudio) {
+    sharedAudio = new Audio();
+    sharedAudio.preload = "auto";
+    sharedAudio.setAttribute("playsinline", "");
+  }
+  return sharedAudio;
 }
+
+function unlockAudio(){
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  try {
+    if ("speechSynthesis" in window) {
+      const u = new SpeechSynthesisUtterance("\u00A0");
+      u.volume = 0; u.rate = 10;
+      window.speechSynthesis.speak(u);
+      window.speechSynthesis.cancel();
+    }
+  } catch (e) {}
+  try {
+    const a = getAudioEl();
+    a.muted = true;
+    a.src = "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSiJrDCQBTcu3UrAIwUdkRgQbFAZC1CQEwTJ9mjRvBA4UOLD8nKVOWfh+UlK3z/177OXrfOdKl7pyn3Xf//WreyTRUoAWgBgkOAd9khMSyBYkKAJSjWUJ0IAKGxRlOtHURgUEuWYpUTMkUYvBrLTMDMBkCBxOiEo8XMJgQsEBgQFAQIB";
+    a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; })
+            .catch(() => { a.muted = false; });
+  } catch (e) {}
+}
+document.addEventListener("pointerdown", unlockAudio, { once: true });
+document.addEventListener("touchstart", unlockAudio, { once: true, passive: true });
+document.addEventListener("keydown", unlockAudio, { once: true });
 
 let voices = [];
 function loadVoices(){
-  if (!("speechSynthesis" in window)) { renderVoiceStatus(); return; }
-  voices = window.speechSynthesis.getVoices() || [];
+  voices = ("speechSynthesis" in window) ? (window.speechSynthesis.getVoices() || []) : [];
   renderVoiceStatus();
 }
-if ("speechSynthesis" in window) { window.speechSynthesis.onvoiceschanged = loadVoices; }
-
+if ("speechSynthesis" in window) window.speechSynthesis.onvoiceschanged = loadVoices;
 function findVoice(prefix){ return voices.find(v => (v.lang || "").toLowerCase().replace("_", "-").startsWith(prefix)); }
 
 function renderVoiceStatus(){
   const el = document.getElementById("voiceStatus");
   if (!el) return;
   const he = findVoice("he"), gr = findVoice("el");
-  el.innerHTML = "<b>Áudio original</b><br>Sintetizador remoto (IW/EL).<br>" +
-    "<span class='opacity-80'>Hebr: " + (he ? "Ativo" : "Nenhum") + " | Grego: " + (gr ? "Ativo" : "Nenhum") + "</span>";
+  el.innerHTML =
+    "<b>Áudio da palavra original</b><br>" +
+    "O botão 🔊 tenta primeiro a síntese remota em hebraico/grego e, se falhar, a voz do aparelho; " +
+    "em último recurso lê a pronúncia figurada em português. O estado aparece por baixo do botão.<br>" +
+    "<span class='opacity-80'>Vozes deste aparelho — hebraico: " + (he ? he.name : "nenhuma") +
+    " · grego: " + (gr ? gr.name : "nenhuma") + ".</span>";
+}
+
+function setAudioNote(msg, tone){
+  const el = document.getElementById("audioNote");
+  if (!el) return;
+  el.textContent = msg || "";
+  el.className = "text-[10px] mb-3 min-h-[12px] " +
+    (tone === "warn" ? "text-amber-600 dark:text-amber-400" : "text-slate-400");
+}
+
+function remoteTTS(word, lang){
+  return new Promise((resolve, reject) => {
+    const a = getAudioEl();
+    const url = "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&ttsspeed=0.4"
+      + "&tl=" + (lang === "hebrew" ? "iw" : "el")
+      + "&q=" + encodeURIComponent(word.slice(0, 180));
+    let settled = false;
+    const done = ok => { if (!settled) { settled = true; cleanup(); ok ? resolve() : reject(new Error("tts")); } };
+    const onPlay = () => done(true);
+    const onErr  = () => done(false);
+    function cleanup(){ a.removeEventListener("playing", onPlay); a.removeEventListener("error", onErr); }
+    a.addEventListener("playing", onPlay);
+    a.addEventListener("error", onErr);
+    try { a.pause(); } catch (e) {}
+    a.src = url;
+    a.load();
+    const p = a.play();
+    if (p && p.catch) p.catch(() => done(false));
+    setTimeout(() => done(false), 3500);
+  });
 }
 
 function localTTS(text, langTag, rate){
@@ -498,51 +508,65 @@ function localTTS(text, langTag, rate){
     else return reject(new Error("voz ausente"));
     u.rate = rate || 0.75;
     let settled = false;
-    u.onstart = () => { if (!settled) { settled = true; resolve(true); } };
-    u.onerror = () => { if (!settled) { settled = true; reject(new Error("erro")); } };
+    u.onstart = () => { if (!settled) { settled = true; resolve(); } };
+    u.onend   = () => { if (!settled) { settled = true; resolve(); } };
+    u.onerror = () => { if (!settled) { settled = true; reject(new Error("erro de síntese")); } };
     synth.speak(u);
-    setTimeout(() => { if (!settled) { settled = true; reject(new Error("timeout")); } }, 3000);
+    setTimeout(() => { if (!settled) { settled = true; reject(new Error("tempo esgotado")); } }, 3000);
   });
 }
 
-function setAudioNote(msg){ const el = document.getElementById("audioNote"); if (el) el.textContent = msg || ""; }
-
 async function speak(word, phonetic, lang){
+  unlockAudio();
   setAudioNote("a reproduzir…");
-  try { await remoteTTS(word, lang); return; } catch (e) {}
-  try { await localTTS(word, lang === "hebrew" ? "he" : "el", 0.7); return; } catch (e) {}
-  try { await localTTS(phonetic, "pt", 0.7); } catch (e) {}
+  if (!voices.length) loadVoices();
+
+  try {
+    await remoteTTS(word, lang);
+    setAudioNote(lang === "hebrew" ? "hebraico · síntese remota" : "grego · síntese remota");
+    return;
+  } catch (e) {}
+
+  try {
+    await localTTS(word, lang === "hebrew" ? "he" : "el", 0.7);
+    setAudioNote((lang === "hebrew" ? "hebraico" : "grego") + " · voz do aparelho");
+    return;
+  } catch (e) {}
+
+  try {
+    await localTTS(phonetic, "pt", 0.7);
+    setAudioNote("leitura figurada em português — aproximação, não é a palavra original", "warn");
+  } catch (e) {
+    setAudioNote("áudio indisponível neste aparelho; toque novamente após interagir com a página", "warn");
+  }
 }
 
+/* ===================== CARREGAR PASSAGEM ===================== */
 function bookInfo(id){ return BOOKS.find(b => b.id === id) || BOOKS[0]; }
 
 async function loadPassage(){
   const info = bookInfo(state.book);
   const isOT = info.test === "OT";
-  const orig = isOT ? ORIGINAL_OT : ORIGINAL_NT;
   const box = document.getElementById("bibleText");
 
   document.getElementById("passageTitle").textContent = info.name + " " + state.chapter;
   document.getElementById("passageSub").textContent = isOT
-    ? "Antigo Testamento · Hebraico (Leningrado)"
-    : "Novo Testamento · Grego (Tischendorf)";
+    ? "Antigo Testamento · hebraico (Códice de Leningrado)"
+    : "Novo Testamento · grego (Tischendorf)";
   document.getElementById("versionBadge").textContent = state.version;
-  box.innerHTML = '<div class="py-10 text-center text-slate-400 text-sm">Carregando ' + info.name + " " + state.chapter + "…</div>";
+  box.innerHTML = '<div class="py-10 text-center text-slate-400 text-sm">A carregar ' + info.name + " " + state.chapter + "…</div>";
 
   const tUrl = API + "/get-text/" + state.version + "/" + state.book + "/" + state.chapter + "/";
-  const oUrl = API + "/get-text/" + orig + "/" + state.book + "/" + state.chapter + "/";
+  const oUrl = API + "/get-text/" + (isOT ? ORIGINAL_OT : ORIGINAL_NT) + "/" + state.book + "/" + state.chapter + "/";
 
   let translation = [], original = [], origError = null;
-
   try {
-    const results = await Promise.allSettled([getJSON(tUrl), getJSON(oUrl)]);
-    if (results[0].status === "fulfilled") translation = results[0].value || [];
-    else throw results[0].reason;
-    if (results[1].status === "fulfilled") original = results[1].value || [];
-    else origError = results[1].reason;
+    const res = await Promise.allSettled([getJSON(tUrl), getJSON(oUrl)]);
+    if (res[0].status === "fulfilled") translation = res[0].value || []; else throw res[0].reason;
+    if (res[1].status === "fulfilled") original = res[1].value || []; else origError = res[1].reason;
   } catch (e) {
     box.innerHTML = '<div class="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl text-xs text-rose-800 dark:text-rose-200">'
-      + "<p class='font-bold mb-1'>Erro ao carregar texto.</p><p>" + escapeHTML(e.message) + "</p></div>";
+      + "<p class='font-bold mb-1'>Erro ao carregar o texto.</p><p>" + escapeHTML(e.message) + "</p></div>";
     return;
   }
 
@@ -560,44 +584,48 @@ function render(translation, origByVerse, isOT, origError){
   box.innerHTML = "";
 
   if (origError) {
-    const warn = document.createElement("div");
-    warn.className = "p-2.5 mb-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-200";
-    warn.textContent = "Original indisponível para este capítulo.";
-    box.appendChild(warn);
+    const w = document.createElement("div");
+    w.className = "p-2.5 mb-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-200";
+    w.textContent = "O texto original não está disponível para este capítulo.";
+    box.appendChild(w);
   }
 
   translation.forEach(item => {
     const wrap = document.createElement("div");
-    wrap.className = "p-2.5 sm:p-3 rounded-xl border border-transparent hover:border-slate-200 dark:hover:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition cursor-pointer";
-    wrap.onclick = () => loadCrossReferences(state.book, state.chapter, item.verse, stripTags(item.text));
+    wrap.className = "p-2 sm:p-3 rounded-xl border border-transparent hover:border-slate-200 dark:hover:border-slate-800 transition";
 
     const head = document.createElement("div");
     head.className = "flex items-start gap-2";
     head.innerHTML =
-      '<span class="text-xs font-bold text-sky-700 dark:text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded-md mt-0.5 select-none">' + item.verse + "</span>" +
-      '<p class="flex-1 text-slate-800 dark:text-slate-200 text-sm sm:text-base">' + escapeHTML(stripTags(item.text)) + "</p>";
+      '<button class="shrink-0 text-xs font-bold text-sky-700 dark:text-sky-400 bg-sky-500/10 px-2 py-1 rounded-md" ' +
+      'data-verse="' + item.verse + '" title="Passagens paralelas">' + item.verse + "</button>" +
+      '<p class="flex-1 min-w-0 text-slate-800 dark:text-slate-200">' + escapeHTML(stripTags(item.text)) + "</p>";
+    head.querySelector("[data-verse]").onclick = () =>
+      loadCrossReferences(state.book, state.chapter, item.verse, stripTags(item.text));
     wrap.appendChild(head);
 
     if (state.interlinear) {
-      const rawOrig = origByVerse[item.verse];
+      const raw = origByVerse[item.verse];
       const strip = document.createElement("div");
-      strip.className = "mt-2.5 p-2.5 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-wrap gap-1.5";
+      strip.className = "mt-2 p-2 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-wrap gap-1.5";
       if (lang === "hebrew") strip.setAttribute("dir", "rtl");
 
-      if (rawOrig) {
-        parseOriginal(rawOrig).forEach(w => {
+      if (!raw) {
+        strip.innerHTML = '<span class="text-[11px] text-slate-400" dir="ltr">Sem correspondência no original (numeração diferente entre as edições).</span>';
+      } else {
+        parseOriginal(raw).forEach(w => {
           const code = w.strongs.length ? (isOT ? "H" : "G") + w.strongs[0] : "";
           const tr = translit(w.text, lang);
+          const ph = phoneticPT(w.text, lang);
           const card = document.createElement("div");
-          card.className = "cursor-pointer flex flex-col items-center px-2 py-1 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:border-sky-400 shadow-sm transition";
-          card.dataset.word = w.text;
-          card.dataset.code = code;
-          card.dataset.lang = lang;
-          card.dataset.translit = tr;
+          card.className = "flex flex-col items-center px-2 py-1 rounded-lg bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 active:border-sky-500 shadow-sm";
           card.innerHTML =
-            '<span class="' + lang + ' text-lg sm:text-xl font-semibold text-sky-800 dark:text-sky-300 leading-tight">' + escapeHTML(w.text) + "</span>" +
+            '<div class="flex items-center gap-1" dir="ltr">' +
+              '<span class="' + lang + ' text-lg sm:text-xl font-semibold text-sky-800 dark:text-sky-300 leading-tight cursor-pointer" data-word="' + escapeHTML(w.text) + '" data-code="' + code + '" data-lang="' + lang + '" data-translit="' + escapeHTML(tr) + '">' + escapeHTML(w.text) + "</span>" +
+              '<button class="px-1 text-sm leading-none text-slate-400 active:text-sky-600" data-speak="' + escapeHTML(w.text) + '" data-ph="' + escapeHTML(ph) + '" data-lang="' + lang + '" aria-label="Ouvir">🔊</button>' +
+            "</div>" +
             '<span class="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 italic" dir="ltr">' + escapeHTML(tr) + "</span>" +
-            '<span class="text-[9px] sm:text-[10px] text-amber-700 dark:text-amber-400" dir="ltr">' + escapeHTML(phoneticPT(w.text, lang)) + "</span>" +
+            '<span class="text-[9px] sm:text-[10px] text-amber-700 dark:text-amber-400" dir="ltr">' + escapeHTML(ph) + "</span>" +
             (state.showStrong && code ? '<span class="text-[8px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-1 rounded mt-0.5" dir="ltr">' + code + "</span>" : "");
           strip.appendChild(card);
         });
@@ -608,22 +636,59 @@ function render(translation, origByVerse, isOT, origError){
   });
 
   box.onclick = e => {
-    const card = e.target.closest("[data-word]");
-    if (card) openLexicon(card.dataset.code, card.dataset.word, card.dataset.lang, card.dataset.translit);
+    const spk = e.target.closest("[data-speak]");
+    if (spk) { e.stopPropagation(); speak(spk.dataset.speak, spk.dataset.ph, spk.dataset.lang); return; }
+    const w = e.target.closest("[data-word]");
+    if (w) openLexicon(w.dataset.code, w.dataset.word, w.dataset.lang, w.dataset.translit);
   };
+}
+
+/* ===================== DICIONÁRIO EM PORTUGUÊS ===================== */
+async function toPortuguese(text){
+  const clean = (text || "").trim();
+  if (!clean) return "";
+  if (trCache[clean]) return trCache[clean];
+
+  const chunks = [];
+  let rest = clean;
+  while (rest.length > 1400) {
+    let cut = rest.lastIndexOf(". ", 1400);
+    if (cut < 400) cut = 1400;
+    chunks.push(rest.slice(0, cut + 1));
+    rest = rest.slice(cut + 1);
+  }
+  chunks.push(rest);
+
+  const parts = [];
+  for (const c of chunks) {
+    const r = await fetch("https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=" + encodeURIComponent(c));
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const d = await r.json();
+    parts.push((d[0] || []).map(s => s[0]).join(""));
+  }
+  const out = parts.join(" ").trim();
+  trCache[clean] = out;
+  return out;
+}
+
+function focusPanel(){
+  if (window.matchMedia("(max-width: 1023px)").matches) {
+    document.getElementById("sidePanel").scrollIntoView({ behavior:"smooth", block:"start" });
+  }
 }
 
 async function openLexicon(code, word, lang, tr){
   switchTab("Lex");
+  focusPanel();
   const panel = document.getElementById("tabLex");
-  const pt = phoneticPT(word, lang);
-  lastLex = { code, word, lang, tr, phonetic: pt };
+  const ph = phoneticPT(word, lang);
+  lastLex = { code, word, lang, tr, phonetic: ph };
 
-  panel.innerHTML = lexShell(lastLex, '<p class="text-xs text-slate-400">Consultando léxico…</p>');
+  panel.innerHTML = lexShell(lastLex, '<p class="text-xs text-slate-400">A consultar o léxico…</p>');
   bindLexButtons();
 
   if (!code) {
-    panel.innerHTML = lexShell(lastLex, '<p class="text-xs text-slate-500">Sem Strong associado.</p>');
+    panel.innerHTML = lexShell(lastLex, '<p class="text-xs text-slate-500 dark:text-slate-400">Esta forma não traz número de Strong nesta edição — costuma ser um prefixo ou marcador sintático ligado à palavra seguinte.</p>');
     bindLexButtons();
     return;
   }
@@ -634,228 +699,257 @@ async function openLexicon(code, word, lang, tr){
       entries = await getJSON(API + "/dictionary-definition/BDBT/" + code + "/");
       lexCache[code] = entries;
     } catch (e) {
-      panel.innerHTML = lexShell(lastLex, '<p class="text-xs text-rose-500">Erro ao carregar</p>');
+      panel.innerHTML = lexShell(lastLex, '<p class="text-xs text-rose-600 dark:text-rose-400">Falha ao consultar o léxico.</p>');
       bindLexButtons();
       return;
     }
   }
-
-  if (entries && entries.length) {
-    const e0 = entries[0];
-    const defEN = stripTags(e0.definition || "");
-    lastLex.defEN = defEN;
-    panel.innerHTML = lexShell(lastLex, 
-      '<div class="text-xs space-y-2">' +
-        '<p><b>Transliteração:</b> ' + escapeHTML(e0.transliteration || tr) + '</p>' +
-        '<p><b>Definição:</b> ' + escapeHTML(defEN) + '</p>' +
-        '<button id="btnTranslateDef" class="mt-2 w-full py-2 bg-sky-600 text-white rounded-lg text-xs font-semibold">Explicar com a IA</button>' +
-      '</div>');
+  if (!entries || !entries.length) {
+    panel.innerHTML = lexShell(lastLex, '<p class="text-xs text-slate-500">Sem verbete para ' + escapeHTML(code) + ".</p>");
     bindLexButtons();
+    return;
   }
+
+  const e0 = entries[0];
+  const defEN = stripTags(e0.definition || "");
+  const shortEN = (e0.short_definition || "").trim();
+  lastLex.defEN = defEN;
+
+  const header =
+    '<div class="grid grid-cols-2 gap-2 mb-3">' +
+      infoBox("Transliteração", e0.transliteration || tr) +
+      infoBox("Lê-se (português)", ph) +
+    "</div>" +
+    (e0.lexeme ? '<p class="text-[11px] text-slate-500 dark:text-slate-400 mb-3">Lexema: <span class="' + lang + ' text-base">' + escapeHTML(e0.lexeme) + "</span>" +
+      (e0.pronunciation ? " · léxico: <i>" + escapeHTML(e0.pronunciation) + "</i>" : "") + "</p>" : "");
+
+  panel.innerHTML = lexShell(lastLex, header + '<div id="lexBody" class="text-xs text-slate-400">A traduzir o verbete para português…</div>');
+  bindLexButtons();
+
+  let shortPT = "", defPT = "";
+  try {
+    if (shortEN) shortPT = await toPortuguese(shortEN);
+    defPT = await toPortuguese(defEN);
+  } catch (e) {}
+
+  const body = document.getElementById("lexBody");
+  if (!body) return;
+  body.className = "";
+
+  if (defPT) {
+    body.innerHTML =
+      (shortPT ? '<p class="text-sm font-semibold mb-2">' + escapeHTML(shortPT) + "</p>" : "") +
+      '<div class="text-xs leading-relaxed text-slate-600 dark:text-slate-300 border-t border-slate-200 dark:border-slate-800 pt-3">' + escapeHTML(defPT) + "</div>" +
+      '<button id="btnShowEN" class="mt-3 text-[11px] text-sky-700 dark:text-sky-400 underline">ver o original em inglês</button>' +
+      '<div id="lexEN" class="hidden mt-2 p-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">' +
+        (shortEN ? "<b>" + escapeHTML(shortEN) + "</b><br>" : "") + escapeHTML(defEN) + "</div>" +
+      '<button id="btnTranslateDef" class="mt-3 w-full py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold">Aprofundar com a IA</button>' +
+      '<p class="text-[10px] text-slate-400 mt-2">Brown-Driver-Briggs (hebraico) / Thayer (grego), traduzido automaticamente.</p>';
+  } else {
+    body.innerHTML =
+      '<p class="text-[11px] text-amber-700 dark:text-amber-400 mb-2">A tradução automática não respondeu; o verbete segue no original.</p>' +
+      (shortEN ? '<p class="text-sm font-semibold mb-2">' + escapeHTML(shortEN) + "</p>" : "") +
+      '<div class="text-xs leading-relaxed text-slate-600 dark:text-slate-300 border-t border-slate-200 dark:border-slate-800 pt-3">' + escapeHTML(defEN) + "</div>" +
+      '<button id="btnTranslateDef" class="mt-3 w-full py-2 bg-sky-600 text-white rounded-lg text-xs font-semibold">Traduzir e explicar com a IA</button>';
+  }
+  bindLexButtons();
+}
+
+function infoBox(label, value){
+  return '<div class="p-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg min-w-0">' +
+    '<p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">' + label + "</p>" +
+    '<p class="text-sm font-semibold mt-0.5 break-words" dir="ltr">' + escapeHTML(value) + "</p></div>";
 }
 
 function lexShell(lex, inner){
   return '<div class="p-3 sm:p-4 bg-slate-50 dark:bg-slate-900 border border-sky-500/30 rounded-xl">' +
     '<div class="flex items-start justify-between gap-3 mb-1">' +
-      '<div>' +
-        '<span class="text-[10px] font-bold text-emerald-700 bg-emerald-500/10 px-2 py-0.5 rounded">' + (lex.code || "Strong") + '</span>' +
-        '<h4 class="' + lex.lang + ' text-2xl sm:text-3xl font-bold text-sky-800 dark:text-sky-300 mt-1">' + escapeHTML(lex.word) + '</h4>' +
-      '</div>' +
-      '<button id="btnSpeakLex" class="p-2.5 bg-sky-600 text-white rounded-xl text-sm">🔊</button>' +
-    '</div>' + inner + '</div>';
+      '<div class="min-w-0">' +
+        '<span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">' + (lex.code || "sem Strong") + "</span>" +
+        '<h4 class="' + lex.lang + ' text-2xl sm:text-3xl font-bold text-sky-800 dark:text-sky-300 mt-1 break-words">' + escapeHTML(lex.word) + "</h4>" +
+      "</div>" +
+      '<button id="btnSpeakLex" class="shrink-0 w-12 h-12 flex items-center justify-center bg-sky-600 text-white rounded-xl text-lg active:bg-sky-700" aria-label="Ouvir a palavra original">🔊</button>' +
+    "</div>" +
+    '<p id="audioNote" class="text-[10px] text-slate-400 mb-3 min-h-[12px]"></p>' +
+    inner + "</div>";
 }
 
 function bindLexButtons(){
   const b = document.getElementById("btnSpeakLex");
   if (b && lastLex) b.onclick = () => speak(lastLex.word, lastLex.phonetic, lastLex.lang);
+
+  const en = document.getElementById("btnShowEN");
+  if (en) en.onclick = () => {
+    const hidden = document.getElementById("lexEN").classList.toggle("hidden");
+    en.textContent = hidden ? "ver o original em inglês" : "ocultar o original";
+  };
+
   const t = document.getElementById("btnTranslateDef");
   if (t) t.onclick = () => {
-    switchTab("Ai");
-    document.getElementById("aiPrompt").value = "Explique exegoticamente a palavra " + lastLex.word + " (" + lastLex.code + ").";
+    switchTab("Ai"); focusPanel();
+    document.getElementById("aiPrompt").value =
+      "Explique em português, de forma exegética e concisa, o termo " +
+      (lastLex.lang === "hebrew" ? "hebraico" : "grego") + " " + lastLex.word + " (" + lastLex.code +
+      "): campo semântico, nuances de uso bíblico e pronúncia." +
+      (lastLex.defEN ? "\n\nVerbete de referência: " + lastLex.defEN.slice(0, 900) : "");
     askAI();
   };
 }
 
+/* ===================== BUSCA ===================== */
 async function executeSearch(){
-  const rawQuery = document.getElementById("searchInput").value.trim();
+  const q = document.getElementById("searchInput").value.trim();
   const out = document.getElementById("searchOutput");
-  if (!rawQuery) { out.textContent = "Digite um termo."; return; }
-
-  out.textContent = "Pesquisando...";
+  if (!q) { out.textContent = "Escreva um termo."; return; }
+  document.activeElement && document.activeElement.blur();
+  out.textContent = "A pesquisar…";
   try {
-    const url = API + "/search/" + state.version + "/" + encodeURIComponent(rawQuery) + "/";
-    const data = await getJSON(url);
-    if (!data || data.length === 0) {
-      out.textContent = "Nenhum resultado encontrado.";
-      return;
-    }
+    const data = await getJSON(API + "/search/" + state.version + "/" + encodeURIComponent(q) + "/");
+    const list = (data && data.results) ? data.results : (Array.isArray(data) ? data : []);
+    const hits = list.filter(i => stripTags(i.text).toLowerCase().includes(q.toLowerCase()));
+    if (!hits.length) { out.textContent = "Nenhum resultado."; return; }
 
-    const filtered = data.filter(item => stripTags(item.text).toLowerCase().includes(rawQuery.toLowerCase()));
-    if (filtered.length === 0) {
-      out.textContent = "Nenhum versículo encontrado.";
-      return;
-    }
-
-    out.innerHTML = "<p class='font-bold mb-2 text-sky-700 dark:text-sky-400'>Encontrados " + filtered.length + " versículos:</p>";
-    const list = document.createElement("div");
-    list.className = "space-y-1.5";
-
-    filtered.slice(0, 30).forEach(item => {
-      const bName = bookInfo(item.book).name;
-      const card = document.createElement("div");
-      card.className = "p-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg cursor-pointer hover:border-sky-500 transition text-xs";
-      card.innerHTML = '<span class="font-bold text-sky-600">' + bName + " " + item.chapter + ":" + item.verse + '</span><br>' + escapeHTML(stripTags(item.text));
-      card.onclick = () => goTo(item.book, item.chapter);
-      list.appendChild(card);
+    out.innerHTML = "<p class='font-bold mb-2 text-sky-700 dark:text-sky-400'>" + hits.length + " versículos</p>";
+    const box = document.createElement("div");
+    box.className = "space-y-1.5";
+    hits.slice(0, 40).forEach(i => {
+      const c = document.createElement("div");
+      c.className = "p-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg active:border-sky-500 text-xs";
+      c.innerHTML = '<span class="font-bold text-sky-600">' + bookInfo(i.book).name + " " + i.chapter + ":" + i.verse + "</span><br>" + escapeHTML(stripTags(i.text));
+      c.onclick = () => { goTo(i.book, i.chapter); window.scrollTo({ top:0, behavior:"smooth" }); };
+      box.appendChild(c);
     });
-    out.appendChild(list);
-  } catch(e) {
-    out.textContent = "Erro na busca.";
-  }
+    out.appendChild(box);
+  } catch (e) { out.textContent = "Erro na busca."; }
 }
 
+/* ===================== REFERÊNCIAS CRUZADAS ===================== */
 async function loadCrossReferences(bookId, chapter, verse, verseText){
   switchTab("Resources");
-  const display = document.getElementById("crossRefDisplay");
+  focusPanel();
+  const d = document.getElementById("crossRefDisplay");
   const bName = bookInfo(bookId).name;
-  display.innerHTML = "Buscando conexões para " + bName + " " + chapter + ":" + verse + "...";
-  
-  try {
-    const crossUrl = API + "/cross-reference/" + bookId + "/" + chapter + "/" + verse + "/";
-    let links = [];
-    try { links = await getJSON(crossUrl); } catch(err) { links = []; }
+  d.textContent = "A procurar ligações para " + bName + " " + chapter + ":" + verse + "…";
 
-    if (links && links.length > 0) {
-      display.innerHTML = "<b>Paralelas para " + bName + " " + chapter + ":" + verse + "</b><div class='mt-1.5 space-y-1 max-h-[160px] overflow-y-auto'>";
-      const container = display.querySelector("div");
-      links.forEach(l => {
-        const tName = bookInfo(l.to_book).name;
-        const btn = document.createElement("div");
-        btn.className = "p-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-[11px] cursor-pointer hover:border-sky-500";
-        btn.innerHTML = '<span class="font-bold text-sky-600">' + tName + " " + l.to_chapter + ":" + l.to_verse + '</span>';
-        btn.onclick = () => goTo(l.to_book, l.to_chapter);
-        container.appendChild(btn);
+  try {
+    let links = [];
+    try { links = await getJSON(API + "/cross-reference/" + bookId + "/" + chapter + "/" + verse + "/"); } catch (e) { links = []; }
+
+    const container = document.createElement("div");
+    container.className = "mt-1.5 space-y-1 max-h-[180px] overflow-y-auto";
+
+    if (links && links.length) {
+      d.innerHTML = "<b>Paralelas de " + bName + " " + chapter + ":" + verse + "</b>";
+      links.slice(0, 30).forEach(l => {
+        const b = document.createElement("div");
+        b.className = "p-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-[11px] active:border-sky-500";
+        b.innerHTML = '<span class="font-bold text-sky-600">' + bookInfo(l.to_book).name + " " + l.to_chapter + ":" + l.to_verse + "</span>";
+        b.onclick = () => { goTo(l.to_book, l.to_chapter); window.scrollTo({ top:0, behavior:"smooth" }); };
+        container.appendChild(b);
       });
+      d.appendChild(container);
       return;
     }
 
-    // Fallback inteligente por palavra-chave caso a API de cruzamento falhe
-    const stopWords = new Set(["que","para","como","com","por","mas","este","esta","dos","das","aos","uma"]);
-    const words = verseText.toLowerCase().replace(/[^\w\sÀ-ÿ]/g, "").split(/\s+/)
-      .filter(w => w.length > 5 && !stopWords.has(w))
-      .sort((a, b) => b.length - a.length);
-    const keyword = words[0] || bName;
-    const searchUrl = API + "/search/" + state.version + "/" + encodeURIComponent(keyword) + "/";
-    const searchData = await getJSON(searchUrl);
-    const related = (searchData || []).filter(item => !(item.book === bookId && item.chapter === chapter && item.verse === verse)).slice(0, 5);
+    const stop = new Set(["que","para","como","com","por","mas","este","esta","dos","das","aos","uma","sobre","quando","porque"]);
+    const kw = verseText.toLowerCase().replace(/[^\w\sÀ-ÿ]/g, "").split(/\s+/)
+      .filter(w => w.length > 5 && !stop.has(w)).sort((a, b) => b.length - a.length)[0] || bName;
+    const sd = await getJSON(API + "/search/" + state.version + "/" + encodeURIComponent(kw) + "/");
+    const list = (sd && sd.results) ? sd.results : (Array.isArray(sd) ? sd : []);
+    const rel = list.filter(i => !(i.book === bookId && i.chapter === chapter && i.verse === verse)).slice(0, 6);
 
-    if (related.length > 0) {
-      display.innerHTML = "<b>Passagens relacionadas:</b><div class='mt-1.5 space-y-1 max-h-[160px] overflow-y-auto'>";
-      const container = display.querySelector("div");
-      related.forEach(item => {
-        const itemBookName = bookInfo(item.book).name;
-        const card = document.createElement("div");
-        card.className = "p-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-[11px] cursor-pointer hover:border-sky-500";
-        card.innerHTML = '<span class="font-bold text-sky-600">' + itemBookName + " " + item.chapter + ":" + item.verse + '</span>: ' + escapeHTML(stripTags(item.text).slice(0, 55)) + '...';
-        card.onclick = () => goTo(item.book, item.chapter);
-        container.appendChild(card);
+    if (rel.length) {
+      d.innerHTML = "<b>Relacionadas por \u201C" + escapeHTML(kw) + "\u201D</b>";
+      rel.forEach(i => {
+        const c = document.createElement("div");
+        c.className = "p-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-[11px] active:border-sky-500";
+        c.innerHTML = '<span class="font-bold text-sky-600">' + bookInfo(i.book).name + " " + i.chapter + ":" + i.verse + "</span>: " + escapeHTML(stripTags(i.text).slice(0, 60)) + "…";
+        c.onclick = () => { goTo(i.book, i.chapter); window.scrollTo({ top:0, behavior:"smooth" }); };
+        container.appendChild(c);
       });
+      d.appendChild(container);
     } else {
-      display.innerHTML = "Nenhuma referência cruzada direta.";
+      d.textContent = "Nenhuma referência cruzada encontrada.";
     }
-  } catch(e) {
-    display.textContent = "Indisponível.";
-  }
+  } catch (e) { d.textContent = "Indisponível."; }
 }
 
-function quickTopic(topic){
-  document.getElementById("topicInput").value = topic;
-  generateTopicStudy();
-}
+/* ===================== TEMAS ===================== */
+function quickTopic(t){ document.getElementById("topicInput").value = t; generateTopicStudy(); }
 
 async function generateTopicStudy(){
   const topic = document.getElementById("topicInput").value.trim();
   const out = document.getElementById("topicOutput");
-  const key = document.getElementById("geminiKey").value.trim();
+  const key = (localStorage.getItem("gemini_api_key") || "").trim();
+  if (!topic) { out.textContent = "Escreva um tema."; return; }
+  if (!key) { out.textContent = "Insira a API Key do Gemini no separador IA."; return; }
 
-  if (!topic) { out.textContent = "Digite um tema."; return; }
-  if (!key) { out.textContent = "Insira a API Key do Gemini na aba 'IA'."; return; }
-
-  out.textContent = "Gerando estudo sobre '" + topic + "'…";
-  const prompt = "Faça um estudo bíblico profundo e esboço sobre '" + topic + "' contendo versículos-chave, termos originais com Strong e esboço prático.";
-
-  const models = await resolveModels(key);
-  let lastErr = "";
-
-  for (const model of models) {
-    try {
-      const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + encodeURIComponent(key), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }] })
-      });
-      const d = await r.json();
-      if (r.ok && d && d.candidates && d.candidates[0].content) {
-        out.textContent = d.candidates[0].content.parts.map(p => p.text || "").join("").trim();
-        return;
-      }
-      lastErr = (d && d.error && d.error.message) || ("Erro HTTP " + r.status);
-    } catch(e) {
-      lastErr = e.message;
-    }
-  }
-  out.textContent = "Erro ao gerar estudo: " + lastErr;
+  out.textContent = "A gerar o estudo sobre “" + topic + "”…";
+  const prompt = "Faça um estudo bíblico e um esboço de pregação sobre \"" + topic +
+    "\", com versículos-chave, termos originais com o número de Strong e aplicação prática. Responda em português.";
+  const r = await callGemini(key, prompt);
+  out.textContent = r.ok ? r.text : "Erro ao gerar o estudo: " + r.error;
 }
 
-function copyTopicOutput() {
+function copyTopicOutput(){
   const text = document.getElementById("topicOutput").innerText;
   const btn = document.getElementById("btnCopyTopic");
-  if (!text || text.includes("Selecione um tema")) return;
-  navigator.clipboard.writeText(text).then(() => {
-    btn.textContent = "✅ Copiado!";
-    setTimeout(() => { btn.textContent = "📋 Copiar"; }, 2000);
-  });
+  if (!text || text.includes("Escolha um tema")) return;
+  const done = () => { btn.textContent = "✅ Copiado"; setTimeout(() => btn.textContent = "📋 Copiar", 2000); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(() => {});
+  else {
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); done(); } catch (e) {}
+    document.body.removeChild(ta);
+  }
 }
 
+/* ===================== MAPA E GENEALOGIA ===================== */
 const LOCATION_DATA = {
-  "Gênesis": { lat: 31.5, lng: 35.2, name: "Canaã", zoom: 6 },
-  "Êxodo": { lat: 28.5, lng: 33.9, name: "Sinai / Egito", zoom: 6 },
-  "Mateus": { lat: 32.7, lng: 35.3, name: "Galileia", zoom: 7 },
-  "Apocalipse": { lat: 37.9, lng: 27.3, name: "Ásia Menor", zoom: 6 }
+  "Gênesis": { lat:31.5, lng:35.2, name:"Canaã", zoom:6 },
+  "Êxodo":   { lat:28.5, lng:33.9, name:"Sinai / Egito", zoom:6 },
+  "Josué":   { lat:31.9, lng:35.3, name:"Canaã (conquista)", zoom:7 },
+  "Mateus":  { lat:32.7, lng:35.3, name:"Galileia", zoom:7 },
+  "Marcos":  { lat:32.7, lng:35.3, name:"Galileia", zoom:7 },
+  "Lucas":   { lat:31.8, lng:35.2, name:"Judeia", zoom:7 },
+  "João":    { lat:31.8, lng:35.2, name:"Judeia", zoom:7 },
+  "Atos":    { lat:37.0, lng:28.0, name:"Mediterrâneo oriental", zoom:5 },
+  "Apocalipse": { lat:37.9, lng:27.3, name:"Ásia Menor", zoom:6 }
 };
 
 function updateMap(){
-  const info = bookInfo(state.book);
-  const loc = LOCATION_DATA[info.name] || { lat: 31.7, lng: 35.2, name: "Terra Santa", zoom: 6 };
-
-  if (!leafletMap) {
-    leafletMap = L.map('map').setView([loc.lat, loc.lng], loc.zoom);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(leafletMap);
-    leafletMarker = L.marker([loc.lat, loc.lng]).addTo(leafletMap);
-  } else {
-    leafletMap.setView([loc.lat, loc.lng], loc.zoom);
-    if (leafletMarker) leafletMarker.setLatLng([loc.lat, loc.lng]);
-  }
-  if (leafletMarker) leafletMarker.bindPopup(loc.name);
-  document.getElementById("mapInfo").textContent = "Região: " + loc.name;
+  if (typeof L === "undefined") return;
+  const loc = LOCATION_DATA[bookInfo(state.book).name] || { lat:31.7, lng:35.2, name:"Terra Santa", zoom:6 };
+  try {
+    if (!leafletMap) {
+      leafletMap = L.map("map", { scrollWheelZoom:false }).setView([loc.lat, loc.lng], loc.zoom);
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", { maxZoom:19 }).addTo(leafletMap);
+      leafletMarker = L.marker([loc.lat, loc.lng]).addTo(leafletMap);
+    } else {
+      leafletMap.setView([loc.lat, loc.lng], loc.zoom);
+      leafletMarker.setLatLng([loc.lat, loc.lng]);
+    }
+    leafletMarker.bindPopup(loc.name);
+    document.getElementById("mapInfo").textContent = "Região: " + loc.name;
+  } catch (e) {}
 }
 
 const GENEALOGIES = {
-  messianic: "Adão ➔ Noé ➔ Abraão ➔ Isaque ➔ Jacó ➔ Judá ➔ Davi ➔ JESUS",
-  patriarchs: "Terá ➔ Abraão ➔ Isaque ➔ Jacó (12 Tribos)",
-  kings: "Saul ➔ Davi ➔ Salomão ➔ Roboão ➔ Josias"
+  messianic: "Adão → Sete → Noé → Sem → Abraão → Isaque → Jacó → Judá → Davi → … → JESUS",
+  patriarchs: "Terá → Abraão → Isaque → Jacó → as doze tribos",
+  kings: "Saul → Davi → Salomão → Roboão → … → Josias → Zedequias"
 };
-
 function showGenealogy(){
-  const sel = document.getElementById("genealogySelect").value;
-  document.getElementById("genealogyDisplay").textContent = GENEALOGIES[sel] || "";
+  document.getElementById("genealogyDisplay").textContent = GENEALOGIES[document.getElementById("genealogySelect").value] || "";
 }
 
+/* ===================== NAVEGAÇÃO ===================== */
 function fillBooks(){
   const s = document.getElementById("bookSelect");
   s.innerHTML = "";
-  const ot = document.createElement("optgroup"); ot.label = "AT";
-  const nt = document.createElement("optgroup"); nt.label = "NT";
+  const ot = document.createElement("optgroup"); ot.label = "Antigo Testamento";
+  const nt = document.createElement("optgroup"); nt.label = "Novo Testamento";
   BOOKS.forEach(b => {
     const o = document.createElement("option");
     o.value = b.id; o.textContent = b.name;
@@ -864,55 +958,46 @@ function fillBooks(){
   s.append(ot, nt);
   s.value = state.book;
 }
-
 function fillChapters(){
   const s = document.getElementById("chapterSelect");
-  const n = bookInfo(state.book).chapters;
   s.innerHTML = "";
-  for (let i = 1; i <= n; i++) {
+  for (let i = 1; i <= bookInfo(state.book).chapters; i++) {
     const o = document.createElement("option");
     o.value = i; o.textContent = "Cap. " + i;
     s.appendChild(o);
   }
   s.value = state.chapter;
 }
-
 function changeVersion(){ state.version = document.getElementById("versionSelect").value; loadPassage(); }
 function changeBook(){ state.book = +document.getElementById("bookSelect").value; state.chapter = 1; fillChapters(); loadPassage(); }
 function changeChapter(){ state.chapter = +document.getElementById("chapterSelect").value; loadPassage(); }
 function navigate(d){
-  const max = bookInfo(state.book).chapters;
   const n = state.chapter + d;
-  if (n < 1 || n > max) return;
+  if (n < 1 || n > bookInfo(state.book).chapters) return;
   state.chapter = n;
   document.getElementById("chapterSelect").value = n;
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  window.scrollTo({ top:0, behavior:"smooth" });
   loadPassage();
 }
 function goTo(book, chapter){ state.book = book; state.chapter = chapter; fillBooks(); fillChapters(); loadPassage(); }
 
 function toggleInterlinear(){
   state.interlinear = !state.interlinear;
-  document.getElementById("btnInterlinear").className = "px-2.5 py-1.5 text-xs rounded-lg font-semibold border transition " + (state.interlinear ? "bg-sky-600 text-white border-sky-500" : "bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700");
-  document.getElementById("btnInterlinearMob").className = "flex-1 py-1 text-[11px] rounded-md font-semibold border text-center " + (state.interlinear ? "bg-sky-600 text-white border-sky-500" : "bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700");
-  document.getElementById("btnInterlinearMob").textContent = state.interlinear ? "Interlinear: On" : "Interlinear: Off";
+  document.getElementById("btnInterlinear").className =
+    "tap-sm px-2.5 py-1.5 text-[11px] sm:text-xs rounded-lg font-semibold border transition " +
+    (state.interlinear ? "bg-sky-600 text-white border-sky-500" : "bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700");
   loadPassage();
 }
-
 function toggleStrong(){
   state.showStrong = !state.showStrong;
   document.getElementById("btnStrong").textContent = "Strong: " + (state.showStrong ? "on" : "off");
-  document.getElementById("btnStrongMob").textContent = "Strong: " + (state.showStrong ? "on" : "off");
   loadPassage();
 }
-
 function toggleTheme(){
   const html = document.documentElement;
   const dark = html.classList.toggle("dark");
   html.classList.toggle("light", !dark);
-  const icon = dark ? "☀️" : "🌙";
-  document.getElementById("themeIcon").textContent = icon;
-  document.getElementById("themeIconMobile").textContent = icon;
+  document.getElementById("themeIcon").textContent = dark ? "☀️" : "🌙";
   localStorage.setItem("theme", dark ? "dark" : "light");
 }
 
@@ -921,30 +1006,27 @@ function switchTab(tab){
     const btn = document.getElementById("tabBtn" + t);
     const pane = document.getElementById("tab" + t);
     const active = t === tab;
-    if (btn) {
-      btn.className = "flex-1 min-w-[50px] py-1.5 px-1 text-[10px] sm:text-[11px] rounded-md transition flex flex-col items-center justify-center gap-0.5 shrink-0 " + (active
-        ? "font-bold bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/30"
-        : "font-semibold text-slate-500 dark:text-slate-400");
-    }
+    if (btn) btn.className = TAB_BASE + " " + (active
+      ? "font-bold bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/30"
+      : "font-semibold text-slate-500 dark:text-slate-400");
     if (pane) {
       pane.classList.toggle("hidden", !active);
-      if (t !== "Lex" && t !== "Resources" && t !== "Search") pane.classList.toggle("flex", active);
+      if (["Search","Topics","Notes","Ai"].includes(t)) pane.classList.toggle("flex", active);
     }
   });
-  if (tab === "Resources" && leafletMap) {
-    setTimeout(() => leafletMap.invalidateSize(), 200);
-  }
+  if (tab === "Resources" && leafletMap) setTimeout(() => leafletMap.invalidateSize(), 250);
 }
 
 function noteKey(){ return "notes_" + state.book + "_" + state.chapter; }
 function saveNotes(){ localStorage.setItem(noteKey(), document.getElementById("notes").value); }
 function loadNotes(){ document.getElementById("notes").value = localStorage.getItem(noteKey()) || ""; }
 
+/* ===================== IA ===================== */
 function saveKey(){ localStorage.setItem("gemini_api_key", document.getElementById("geminiKey").value.trim()); resolvedModels = null; }
 function clearKey(){ localStorage.removeItem("gemini_api_key"); document.getElementById("geminiKey").value = ""; resolvedModels = null; }
 function loadKey(){ const k = localStorage.getItem("gemini_api_key") || ""; if (k) document.getElementById("geminiKey").value = k; }
 
-const FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.0-flash", "gemini-2.5-pro"];
+const FALLBACK_MODELS = ["gemini-2.5-flash","gemini-flash-latest","gemini-2.0-flash","gemini-2.5-pro"];
 let resolvedModels = null;
 
 async function resolveModels(key){
@@ -953,68 +1035,71 @@ async function resolveModels(key){
     const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?key=" + encodeURIComponent(key));
     if (r.ok) {
       const d = await r.json();
-      const usable = (d.models || [])
-        .filter(m => (m.supportedGenerationMethods || []).includes("generateContent"))
-        .map(m => m.name.replace("models/", ""));
+      const usable = (d.models || []).filter(m => (m.supportedGenerationMethods || []).includes("generateContent"))
+                                     .map(m => m.name.replace("models/", ""));
       const flash = usable.filter(m => m.includes("flash") && !m.includes("thinking"));
       const list = [...flash, ...usable].filter((v, i, a) => a.indexOf(v) === i);
-      if (list.length) {
-        resolvedModels = list.slice(0, 5);
-        document.getElementById("aiModelInfo").textContent = "Modelo: " + resolvedModels[0];
-        return resolvedModels;
-      }
+      if (list.length) { resolvedModels = list.slice(0, 5); return resolvedModels; }
     }
   } catch (e) {}
   resolvedModels = FALLBACK_MODELS;
   return resolvedModels;
 }
 
-async function askAI(mode){
-  const key = document.getElementById("geminiKey").value.trim();
-  const out = document.getElementById("aiResponse");
-  out.classList.remove("hidden");
-
-  if (!key) { out.textContent = "Insira a API Key do Gemini na aba 'IA'."; return; }
-
-  const info = bookInfo(state.book);
-  let prompt = document.getElementById("aiPrompt").value.trim();
-  if (mode === "chapter") {
-    prompt = "Faça um panorama exegético conciso de " + info.name + " " + state.chapter + ": contexto histórico, estrutura e termos no original.";
-    document.getElementById("aiPrompt").value = prompt;
-  }
-  if (!prompt) { out.textContent = "Digite uma pergunta."; return; }
-
-  out.textContent = "Consultando IA…";
+async function callGemini(key, prompt){
   const models = await resolveModels(key);
   let lastErr = "";
-
   for (const model of models) {
     try {
       const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + encodeURIComponent(key), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "Passagem: " + info.name + " " + state.chapter + ".\n\n" + prompt }] }] })
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: "Você é um exegeta bíblico que trabalha a partir do hebraico e do grego originais. Responda sempre em português claro e rigoroso, citando termos originais com transliteração, e assinale divergências entre escolas de interpretação." }] },
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.4, maxOutputTokens: 1400 }
+        })
       });
       const d = await r.json();
-      if (r.ok && d && d.candidates && d.candidates[0].content) {
-        out.textContent = d.candidates[0].content.parts.map(p => p.text || "").join("").trim();
-        document.getElementById("aiModelInfo").textContent = "Modelo: " + model;
-        return;
+      const text = (d.candidates && d.candidates[0] && d.candidates[0].content &&
+        (d.candidates[0].content.parts || []).map(p => p.text || "").join("").trim()) || "";
+      if (r.ok && text) {
+        const el = document.getElementById("aiModelInfo");
+        if (el) el.textContent = "Modelo: " + model;
+        return { ok:true, text };
       }
-      lastErr = (d && d.error && d.error.message) || ("Erro HTTP " + r.status);
-    } catch(e) {
-      lastErr = e.message;
-    }
+      lastErr = (d.error && d.error.message) || ("resposta vazia de " + model);
+    } catch (e) { lastErr = e.message; }
   }
-  out.textContent = "Erro ao consultar a IA: " + lastErr;
+  return { ok:false, error:lastErr };
 }
 
-function initApp() {
+async function askAI(mode){
+  const key = document.getElementById("geminiKey").value.trim();
+  const out = document.getElementById("aiResponse");
+  out.classList.remove("hidden");
+  if (!key) { out.textContent = "Insira a sua API Key do Google AI Studio."; return; }
+
+  const info = bookInfo(state.book);
+  let prompt = document.getElementById("aiPrompt").value.trim();
+  if (mode === "chapter") {
+    prompt = "Faça um panorama exegético conciso de " + info.name + " " + state.chapter +
+      ": contexto histórico, estrutura do capítulo e três termos do original que mais pesam na interpretação.";
+    document.getElementById("aiPrompt").value = prompt;
+  }
+  if (!prompt) { out.textContent = "Escreva uma pergunta."; return; }
+
+  out.textContent = "A consultar…";
+  const r = await callGemini(key, "Passagem em estudo: " + info.name + " " + state.chapter + " (" + state.version + ").\n\n" + prompt);
+  out.textContent = r.ok ? r.text : "Não foi possível obter resposta. Último erro: " + r.error;
+}
+
+/* ===================== ARRANQUE ===================== */
+function initApp(){
   if (localStorage.getItem("theme") === "dark") {
     document.documentElement.classList.add("dark");
     document.documentElement.classList.remove("light");
     document.getElementById("themeIcon").textContent = "☀️";
-    document.getElementById("themeIconMobile").textContent = "☀️";
   }
   fillBooks();
   fillChapters();
@@ -1022,13 +1107,11 @@ function initApp() {
   showGenealogy();
   loadKey();
   loadVoices();
-  setTimeout(loadVoices, 600);
+  setTimeout(loadVoices, 800);
   loadPassage();
 }
-
-document.addEventListener("DOMContentLoaded", () => {
-  checkAuth();
-});
+document.addEventListener("DOMContentLoaded", checkAuth);
+window.addEventListener("orientationchange", () => { if (leafletMap) setTimeout(() => leafletMap.invalidateSize(), 300); });
 </script>
 </body>
 </html>
