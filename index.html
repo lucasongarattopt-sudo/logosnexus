@@ -405,10 +405,14 @@ function phoneticGreek(s){
 function phoneticPT(w, lang){ return lang === "hebrew" ? phoneticHebrew(w) : phoneticGreek(w); }
 
 /* ===================== ÁUDIO (compatível com telemóvel) =====================
-   O iOS e o Android só deixam tocar som dentro de um gesto do utilizador.
-   Por isso: (1) destravamos os dois motores no primeiro toque da sessão;
-   (2) o elemento <audio> é criado e reaproveitado, nunca recriado dentro de
-   uma promessa; (3) a síntese local é chamada de imediato, sem await pelo meio.
+   iOS e Android só deixam iniciar som dentro de um gesto do utilizador, mas
+   o "destravar" do speechSynthesis com speak()+cancel() imediato — truque
+   comum para desbloquear o AudioContext — tem um efeito colateral conhecido
+   no WebKit (motor do Safari e também do Chrome no iOS): cancelar logo a
+   seguir a falar, no mesmo instante, deixa a fila de síntese num estado
+   preso, e todas as chamadas seguintes ficam mudas sem erro nenhum. Por
+   isso aqui só desbloqueamos o elemento <audio> (que precisa mesmo disso);
+   a voz do sistema nunca é tocada fora de uma chamada real do utilizador.
    ============================================================================ */
 let audioUnlocked = false;
 let sharedAudio = null;
@@ -426,14 +430,6 @@ function unlockAudio(){
   if (audioUnlocked) return;
   audioUnlocked = true;
   try {
-    if ("speechSynthesis" in window) {
-      const u = new SpeechSynthesisUtterance("\u00A0");
-      u.volume = 0; u.rate = 10;
-      window.speechSynthesis.speak(u);
-      window.speechSynthesis.cancel();
-    }
-  } catch (e) {}
-  try {
     const a = getAudioEl();
     a.muted = true;
     a.src = "data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSiJrDCQBTcu3UrAIwUdkRgQbFAZC1CQEwTJ9mjRvBA4UOLD8nKVOWfh+UlK3z/177OXrfOdKl7pyn3Xf//WreyTRUoAWgBgkOAd9khMSyBYkKAJSjWUJ0IAKGxRlOtHURgUEuWYpUTMkUYvBrLTMDMBkCBxOiEo8XMJgQsEBgQFAQIB";
@@ -445,6 +441,15 @@ function unlockAudio(){
 document.addEventListener("pointerdown", unlockAudio, { once: true });
 document.addEventListener("touchstart", unlockAudio, { once: true, passive: true });
 document.addEventListener("keydown", unlockAudio, { once: true });
+
+/* Vigia de fundo: no iOS Safari a síntese por vezes entra em "pausa" sozinha
+   ao fim de alguns segundos (bug antigo do WebKit). Isto retoma-a sem que o
+   utilizador tenha de fazer nada. */
+if ("speechSynthesis" in window) {
+  setInterval(() => {
+    if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+  }, 4000);
+}
 
 let voices = [];
 function loadVoices(){
@@ -500,13 +505,10 @@ function remoteTTS(word, lang){
   });
 }
 
-/* speak() PRECISA de ser síncrona no caminho principal: o iOS/Safari só aceita
-   speechSynthesis.speak() quando chamado diretamente dentro do gesto de toque
-   do utilizador. Qualquer "await" antes dessa chamada faz o iOS descartá-la
-   em silêncio. Por isso a voz do aparelho é tentada primeiro e de imediato;
-   o serviço remoto (que também exige cabeçalhos que o browser não controla e
-   por vezes devolve captcha) fica apenas como reforço quando não há nenhum
-   sintetizador de voz disponível. */
+/* speak() tem de ser chamada de forma síncrona, dentro do próprio toque do
+   utilizador — sem nenhum "await" antes da chamada a synth.speak(). Também
+   evitamos cancel() quando não há nada a falar, porque cancelar sem motivo
+   é outra causa conhecida de a fila do WebKit ficar presa em silêncio. */
 function speak(word, phonetic, lang){
   unlockAudio();
   if (!voices.length && "speechSynthesis" in window) voices = window.speechSynthesis.getVoices() || [];
@@ -514,28 +516,37 @@ function speak(word, phonetic, lang){
   if ("speechSynthesis" in window) {
     const synth = window.speechSynthesis;
     const voice = findVoice(lang === "hebrew" ? "he" : "el");
-    synth.cancel();
 
-    const u = new SpeechSynthesisUtterance(voice ? word : phonetic);
-    if (voice) { u.voice = voice; u.lang = voice.lang; }
-    else { u.lang = "pt-PT"; }
-    u.rate = 0.72;
+    const fire = () => {
+      const u = new SpeechSynthesisUtterance(voice ? word : phonetic);
+      if (voice) { u.voice = voice; u.lang = voice.lang; }
+      else { u.lang = "pt-PT"; }
+      u.rate = 0.72;
+      u.volume = 1;
 
-    u.onerror = () => setAudioNote("não foi possível falar neste aparelho; verifique se o som não está no mudo", "warn");
-    u.onend = () => {};
+      u.onstart = () => setAudioNote(
+        voice ? (lang === "hebrew" ? "hebraico · voz do aparelho" : "grego · voz do aparelho")
+              : "leitura figurada em português — sem voz " + (lang === "hebrew" ? "hebraica" : "grega") + " instalada",
+        voice ? undefined : "warn"
+      );
+      u.onerror = ev => setAudioNote(
+        "erro ao falar (" + (ev && ev.error ? ev.error : "desconhecido") + "). Verifique o botão lateral de silêncio do iPhone.",
+        "warn"
+      );
 
-    setAudioNote(
-      voice
-        ? (lang === "hebrew" ? "hebraico · voz do aparelho" : "grego · voz do aparelho")
-        : "leitura figurada em português — sem voz " + (lang === "hebrew" ? "hebraica" : "grega") + " instalada neste aparelho",
-      voice ? undefined : "warn"
-    );
+      synth.speak(u);
+    };
 
-    synth.speak(u);   // chamada síncrona — não colocar await antes desta linha
+    setAudioNote("a preparar…");
+    if (synth.speaking || synth.pending) {
+      synth.cancel();
+      setTimeout(fire, 60);   // dá tempo ao WebKit para esvaziar a fila antes de falar de novo
+    } else {
+      fire();
+    }
     return;
   }
 
-  // Só chega aqui se o aparelho não tiver Web Speech API, o que é raro.
   setAudioNote("a tentar serviço remoto…");
   remoteTTS(word, lang)
     .then(() => setAudioNote(lang === "hebrew" ? "hebraico · serviço remoto" : "grego · serviço remoto"))
