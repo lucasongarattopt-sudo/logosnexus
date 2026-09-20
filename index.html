@@ -316,7 +316,7 @@ const BOOKS = [
  ["3 João",1,"NT"],["Judas",1,"NT"],["Apocalipse",22,"NT"]
 ].map((b,i)=>({ id:i+1, name:b[0], chapters:b[1], test:b[2] }));
 
-const API = "https://bolls.life";
+const API = "https://api.allorigins.win/raw?url=" + encodeURIComponent("https://bolls.life");
 const ORIGINAL_OT = "WLCa";
 const ORIGINAL_NT = "TISCH";
 
@@ -334,12 +334,19 @@ let lastLex = null;
 let leafletMap = null;
 let leafletMarker = null;
 
-async function getJSON(url){
-  if (cache[url]) return cache[url];
-  const r = await fetch(url);
-  if (!r.ok) throw new Error("HTTP " + r.status);
+async function getJSON(endpoint){
+  const targetUrl = "https://bolls.life" + endpoint;
+  const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(targetUrl);
+  if (cache[targetUrl]) return cache[targetUrl];
+  
+  let r = await fetch(proxyUrl);
+  if (!r.ok) {
+    // Tentativa direta caso o proxy falhe
+    r = await fetch(targetUrl);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+  }
   const data = await r.json();
-  cache[url] = data;
+  cache[targetUrl] = data;
   return data;
 }
 
@@ -448,7 +455,6 @@ function phoneticPT(word, lang){ return lang === "hebrew" ? phoneticHebrew(word)
 
 let audioEl = null;
 
-// MOTOR DE ÁUDIO ROBUSTO PARA MOBILE COM FEEDBACK TÁCTIL E MULTI-FALLBACK
 function playWordAudio(word, phonetic, lang) {
   const q = word.slice(0, 180);
   const tl = lang === "hebrew" ? "iw" : "el";
@@ -462,19 +468,12 @@ function playWordAudio(word, phonetic, lang) {
   const playPromise = a.play();
   if (playPromise !== undefined) {
     playPromise.catch(() => {
-      // Fallback 1: Web Speech API (Sintetizador nativo do telemóvel)
       if ("speechSynthesis" in window) {
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(word);
         u.lang = lang === "hebrew" ? "he-IL" : "el-GR";
         u.rate = 0.75;
         window.speechSynthesis.speak(u);
-      } else {
-        // Fallback 2: Fala a transliteração aportuguesada se nada mais funcionar
-        const u2 = new SpeechSynthesisUtterance(phonetic);
-        u2.lang = "pt-PT";
-        u2.rate = 0.8;
-        window.speechSynthesis.speak(u2);
       }
     });
   }
@@ -495,13 +494,13 @@ async function loadPassage(){
   document.getElementById("versionBadge").textContent = state.version;
   box.innerHTML = '<div class="py-10 text-center text-slate-400 text-sm">Carregando ' + info.name + " " + state.chapter + "…</div>";
 
-  const tUrl = API + "/get-text/" + state.version + "/" + state.book + "/" + state.chapter + "/";
-  const oUrl = API + "/get-text/" + orig + "/" + state.book + "/" + state.chapter + "/";
+  const tPath = "/get-text/" + state.version + "/" + state.book + "/" + state.chapter + "/";
+  const oPath = "/get-text/" + orig + "/" + state.book + "/" + state.chapter + "/";
 
   let translation = [], original = [], origError = null;
 
   try {
-    const results = await Promise.allSettled([getJSON(tUrl), getJSON(oUrl)]);
+    const results = await Promise.allSettled([getJSON(tPath), getJSON(oPath)]);
     if (results[0].status === "fulfilled") translation = results[0].value || [];
     else throw results[0].reason;
     if (results[1].status === "fulfilled") original = results[1].value || [];
@@ -597,7 +596,7 @@ async function openLexicon(code, word, lang, tr){
   let entries = lexCache[code];
   if (!entries) {
     try {
-      entries = await getJSON(API + "/dictionary-definition/BDBT/" + code + "/");
+      entries = await getJSON("/dictionary-definition/BDBT/" + code + "/");
       lexCache[code] = entries;
     } catch (e) {
       panel.innerHTML = lexShell(lastLex, '<p class="text-xs text-rose-500">Erro ao carregar</p>');
@@ -647,8 +646,7 @@ async function executeSearch(){
 
   out.textContent = "Pesquisando...";
   try {
-    const url = API + "/search/" + state.version + "/" + encodeURIComponent(rawQuery) + "/";
-    const data = await getJSON(url);
+    const data = await getJSON("/search/" + state.version + "/" + encodeURIComponent(rawQuery) + "/");
     if (!data || data.length === 0) {
       out.textContent = "Nenhum resultado encontrado.";
       return;
@@ -685,9 +683,8 @@ async function loadCrossReferences(bookId, chapter, verse, verseText){
   display.innerHTML = "Buscando conexões para " + bName + " " + chapter + ":" + verse + "...";
   
   try {
-    const crossUrl = API + "/cross-reference/" + bookId + "/" + chapter + "/" + verse + "/";
     let links = [];
-    try { links = await getJSON(crossUrl); } catch(err) { links = []; }
+    try { links = await getJSON("/cross-reference/" + bookId + "/" + chapter + "/" + verse + "/"); } catch(err) { links = []; }
 
     if (links && links.length > 0) {
       display.innerHTML = "<b>Paralelas para " + bName + " " + chapter + ":" + verse + "</b><div class='mt-1.5 space-y-1 max-h-[160px] overflow-y-auto'>";
@@ -708,8 +705,7 @@ async function loadCrossReferences(bookId, chapter, verse, verseText){
       .filter(w => w.length > 5 && !stopWords.has(w))
       .sort((a, b) => b.length - a.length);
     const keyword = words[0] || bName;
-    const searchUrl = API + "/search/" + state.version + "/" + encodeURIComponent(keyword) + "/";
-    const searchData = await getJSON(searchUrl);
+    const searchData = await getJSON("/search/" + state.version + "/" + encodeURIComponent(keyword) + "/");
     const related = (searchData || []).filter(item => !(item.book === bookId && item.chapter === chapter && item.verse === verse)).slice(0, 5);
 
     if (related.length > 0) {
