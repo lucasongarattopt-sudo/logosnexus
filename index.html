@@ -440,6 +440,7 @@ function unlockAudio(){
     a.play().then(() => { a.pause(); a.currentTime = 0; a.muted = false; })
             .catch(() => { a.muted = false; });
   } catch (e) {}
+  loadVoices();
 }
 document.addEventListener("pointerdown", unlockAudio, { once: true });
 document.addEventListener("touchstart", unlockAudio, { once: true, passive: true });
@@ -459,10 +460,14 @@ function renderVoiceStatus(){
   const he = findVoice("he"), gr = findVoice("el");
   el.innerHTML =
     "<b>Áudio da palavra original</b><br>" +
-    "O botão 🔊 tenta primeiro a síntese remota em hebraico/grego e, se falhar, a voz do aparelho; " +
-    "em último recurso lê a pronúncia figurada em português. O estado aparece por baixo do botão.<br>" +
+    "O botão 🔊 usa a voz do seu aparelho. Se não houver voz hebraica/grega instalada, lê a pronúncia figurada em português.<br>" +
     "<span class='opacity-80'>Vozes deste aparelho — hebraico: " + (he ? he.name : "nenhuma") +
-    " · grego: " + (gr ? gr.name : "nenhuma") + ".</span>";
+    " · grego: " + (gr ? gr.name : "nenhuma") + ".</span><br>" +
+    (he && gr ? "" :
+    "<span class='opacity-80'>Para ouvir a pronúncia original real, instale a voz no sistema — " +
+    "iOS/macOS: Definições ▸ Acessibilidade ▸ Conteúdo Falado ▸ Vozes; " +
+    "Android: Definições ▸ Sistema ▸ Idiomas ▸ Conversão de texto em voz. " +
+    "Sem isso, o aparelho não sabe pronunciar hebraico/grego e este portal não consegue contornar essa limitação.</span>");
 }
 
 function setAudioNote(msg, tone){
@@ -495,50 +500,46 @@ function remoteTTS(word, lang){
   });
 }
 
-function localTTS(text, langTag, rate){
-  return new Promise((resolve, reject) => {
-    if (!("speechSynthesis" in window)) return reject(new Error("sem síntese"));
-    const synth = window.speechSynthesis;
-    synth.cancel();
-    if (synth.paused) synth.resume();
-    const u = new SpeechSynthesisUtterance(text);
-    const v = findVoice(langTag);
-    if (v) { u.voice = v; u.lang = v.lang; }
-    else if (langTag === "pt") { u.lang = "pt-PT"; }
-    else return reject(new Error("voz ausente"));
-    u.rate = rate || 0.75;
-    let settled = false;
-    u.onstart = () => { if (!settled) { settled = true; resolve(); } };
-    u.onend   = () => { if (!settled) { settled = true; resolve(); } };
-    u.onerror = () => { if (!settled) { settled = true; reject(new Error("erro de síntese")); } };
-    synth.speak(u);
-    setTimeout(() => { if (!settled) { settled = true; reject(new Error("tempo esgotado")); } }, 3000);
-  });
-}
-
-async function speak(word, phonetic, lang){
+/* speak() PRECISA de ser síncrona no caminho principal: o iOS/Safari só aceita
+   speechSynthesis.speak() quando chamado diretamente dentro do gesto de toque
+   do utilizador. Qualquer "await" antes dessa chamada faz o iOS descartá-la
+   em silêncio. Por isso a voz do aparelho é tentada primeiro e de imediato;
+   o serviço remoto (que também exige cabeçalhos que o browser não controla e
+   por vezes devolve captcha) fica apenas como reforço quando não há nenhum
+   sintetizador de voz disponível. */
+function speak(word, phonetic, lang){
   unlockAudio();
-  setAudioNote("a reproduzir…");
-  if (!voices.length) loadVoices();
+  if (!voices.length && "speechSynthesis" in window) voices = window.speechSynthesis.getVoices() || [];
 
-  try {
-    await remoteTTS(word, lang);
-    setAudioNote(lang === "hebrew" ? "hebraico · síntese remota" : "grego · síntese remota");
+  if ("speechSynthesis" in window) {
+    const synth = window.speechSynthesis;
+    const voice = findVoice(lang === "hebrew" ? "he" : "el");
+    synth.cancel();
+
+    const u = new SpeechSynthesisUtterance(voice ? word : phonetic);
+    if (voice) { u.voice = voice; u.lang = voice.lang; }
+    else { u.lang = "pt-PT"; }
+    u.rate = 0.72;
+
+    u.onerror = () => setAudioNote("não foi possível falar neste aparelho; verifique se o som não está no mudo", "warn");
+    u.onend = () => {};
+
+    setAudioNote(
+      voice
+        ? (lang === "hebrew" ? "hebraico · voz do aparelho" : "grego · voz do aparelho")
+        : "leitura figurada em português — sem voz " + (lang === "hebrew" ? "hebraica" : "grega") + " instalada neste aparelho",
+      voice ? undefined : "warn"
+    );
+
+    synth.speak(u);   // chamada síncrona — não colocar await antes desta linha
     return;
-  } catch (e) {}
-
-  try {
-    await localTTS(word, lang === "hebrew" ? "he" : "el", 0.7);
-    setAudioNote((lang === "hebrew" ? "hebraico" : "grego") + " · voz do aparelho");
-    return;
-  } catch (e) {}
-
-  try {
-    await localTTS(phonetic, "pt", 0.7);
-    setAudioNote("leitura figurada em português — aproximação, não é a palavra original", "warn");
-  } catch (e) {
-    setAudioNote("áudio indisponível neste aparelho; toque novamente após interagir com a página", "warn");
   }
+
+  // Só chega aqui se o aparelho não tiver Web Speech API, o que é raro.
+  setAudioNote("a tentar serviço remoto…");
+  remoteTTS(word, lang)
+    .then(() => setAudioNote(lang === "hebrew" ? "hebraico · serviço remoto" : "grego · serviço remoto"))
+    .catch(() => setAudioNote("áudio indisponível neste navegador", "warn"));
 }
 
 /* ===================== CARREGAR PASSAGEM ===================== */
