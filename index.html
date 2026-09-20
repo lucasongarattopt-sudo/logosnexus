@@ -35,7 +35,6 @@ body {
 
 #map { height: 170px; width: 100%; border-radius: 0.75rem; z-index: 10; }
 
-/* Alvos de toque nunca abaixo de 40px em ecrãs pequenos */
 @media (max-width: 640px) {
   button, select, input { min-height: 40px; }
   .tap-sm { min-height: 34px; }
@@ -53,7 +52,6 @@ body {
 }
 .dark .fab-mini { background: #0f172a; color: #f1f5f9; border-color: #334155; }
 
-/* Cabeçalho respeita o entalhe do ecrã */
 header { padding-top: env(safe-area-inset-top, 0px); }
 </style>
 </head>
@@ -66,7 +64,6 @@ header { padding-top: env(safe-area-inset-top, 0px); }
   <header class="border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-950/90 backdrop-blur sticky top-0 z-40 shadow-sm">
     <div class="max-w-7xl mx-auto px-2 sm:px-4 py-2 space-y-2">
 
-      <!-- linha 1: marca + ações -->
       <div class="flex items-center justify-between gap-2">
         <div class="flex items-center gap-2 cursor-pointer shrink-0" onclick="goTo(1,1)">
           <svg class="w-5 h-5 text-sky-600 dark:text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
@@ -80,7 +77,6 @@ header { padding-top: env(safe-area-inset-top, 0px); }
         </div>
       </div>
 
-      <!-- linha 2: seletores -->
       <div class="flex items-center gap-1.5">
         <select id="versionSelect" onchange="changeVersion()" class="flex-1 min-w-0 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-sky-500 font-medium truncate">
           <optgroup label="Português">
@@ -107,7 +103,7 @@ header { padding-top: env(safe-area-inset-top, 0px); }
 
   <div class="flex-1 max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-5 p-2 sm:p-6">
 
-    <!-- ===== Texto: primeiro no telemóvel ===== -->
+    <!-- ===== Texto ===== -->
     <main class="order-1 lg:col-span-7 xl:col-span-8 bg-white dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 sm:p-6 flex flex-col shadow-sm">
       <div class="flex items-start justify-between gap-2 pb-3 mb-4 border-b border-slate-200 dark:border-slate-800">
         <div class="min-w-0">
@@ -115,7 +111,7 @@ header { padding-top: env(safe-area-inset-top, 0px); }
           <p id="passageSub" class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5"></p>
         </div>
         <div class="flex items-center gap-2">
-          <button onclick="copyCurrentChapter()" id="btnCopyChapter" class="tap-sm px-2 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-[10px] font-medium" title="Copiar texto do capítulo">📋 Copiar Capítulo</button>
+          <button onclick="openChapterPopup()" class="tap-sm px-2.5 py-1 bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20 rounded-lg text-[11px] font-bold">📋 Ver / Copiar Capítulo</button>
           <span id="versionBadge" class="shrink-0 px-2 py-0.5 bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20 rounded-md text-[11px] font-bold uppercase">ACF</span>
         </div>
       </div>
@@ -128,10 +124,9 @@ header { padding-top: env(safe-area-inset-top, 0px); }
       </div>
     </main>
 
-    <!-- ===== Fundo escurecido da gaveta (só telemóvel) ===== -->
     <div id="sheetBackdrop" onclick="closeSidePanel()" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden"></div>
 
-    <!-- ===== Painel lateral: gaveta no telemóvel, coluna fixa no computador ===== -->
+    <!-- ===== Painel Lateral ===== -->
     <aside id="sidePanel" class="order-2 lg:col-span-5 xl:col-span-4
       fixed inset-x-0 bottom-0 z-50 translate-y-full transition-transform duration-300 ease-out
       lg:static lg:z-auto lg:translate-y-0 lg:transition-none">
@@ -140,7 +135,6 @@ header { padding-top: env(safe-area-inset-top, 0px); }
         max-h-[86vh] lg:h-[calc(100vh-8rem)] lg:max-h-none shadow-2xl lg:shadow-sm
         pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] lg:pb-4">
 
-        <!-- Puxador + fechar (só telemóvel) -->
         <div class="lg:hidden flex items-center justify-between mb-1 shrink-0">
           <span class="w-9"></span>
           <span class="block w-10 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700"></span>
@@ -175,6 +169,10 @@ header { padding-top: env(safe-area-inset-top, 0px); }
             <input type="search" id="searchInput" enterkeyhint="search" placeholder="Ex: graça, princípio…" class="flex-1 min-w-0 p-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-base sm:text-xs outline-none focus:ring-2 focus:ring-sky-500" onkeydown="if(event.key==='Enter') executeSearch()" />
             <button onclick="executeSearch()" class="px-3 py-2 bg-sky-600 text-white rounded-xl text-xs font-bold shrink-0">Buscar</button>
           </div>
+          <div class="flex justify-between items-center mb-1 shrink-0">
+            <span class="text-[10px] text-slate-400">Resultados da Busca</span>
+            <button onclick="openSearchPopup()" class="tap-sm text-[10px] px-2 py-0.5 bg-sky-500/10 text-sky-700 dark:text-sky-400 rounded font-bold">📋 Ver / Copiar Busca</button>
+          </div>
           <div id="searchOutput" class="p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs leading-relaxed flex-1 overflow-y-auto min-h-0">
             <span class="text-slate-400">Escreva um termo acima.</span>
           </div>
@@ -193,8 +191,8 @@ header { padding-top: env(safe-area-inset-top, 0px); }
             <button onclick="generateTopicStudy()" class="px-3 py-2 bg-sky-600 text-white rounded-xl text-xs font-bold shrink-0">Gerar</button>
           </div>
           <div class="flex justify-between items-center mb-1 shrink-0">
-            <span class="text-[10px] text-slate-400">Resultado da Seção Temas</span>
-            <button onclick="copyTopicOutput()" id="btnCopyTopic" class="tap-sm text-[10px] px-2 py-0.5 bg-slate-200 dark:bg-slate-800 rounded font-medium">📋 Copiar Tema</button>
+            <span class="text-[10px] text-slate-400">Estudo de Tema</span>
+            <button onclick="openTopicPopup()" class="tap-sm text-[10px] px-2 py-0.5 bg-sky-500/10 text-sky-700 dark:text-sky-400 rounded font-bold">📋 Ver / Copiar Tema</button>
           </div>
           <div id="topicOutput" class="p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs leading-relaxed whitespace-pre-wrap flex-1 overflow-y-auto min-h-0">
             <span class="text-slate-400">Escolha um tema ou escreva um assunto.</span>
@@ -218,15 +216,21 @@ header { padding-top: env(safe-area-inset-top, 0px); }
             <div id="genealogyDisplay" class="mt-2 text-[11px] leading-relaxed p-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg font-mono overflow-x-auto"></div>
           </div>
           <div class="p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
-            <h4 class="text-xs font-bold mb-2">🔗 Passagens paralelas</h4>
-            <p class="text-[10px] text-slate-500 dark:text-slate-400 mb-2">Toque no número de um versículo no texto.</p>
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-xs font-bold">🔗 Passagens paralelas</h4>
+              <button onclick="openResourcesPopup()" class="tap-sm text-[10px] px-2 py-0.5 bg-sky-500/10 text-sky-700 dark:text-sky-400 rounded font-bold">📋 Ver / Copiar Recursos</button>
+            </div>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400 mb-2">Toque no número de um versículo no texto principal.</p>
             <div id="crossRefDisplay" class="text-xs text-slate-600 dark:text-slate-300">Nenhum versículo selecionado.</div>
           </div>
         </div>
 
         <!-- Notas -->
         <div id="tabNotes" class="py-3 flex-1 flex-col hidden min-h-0">
-          <label class="block text-xs font-semibold mb-1.5 text-slate-600 dark:text-slate-400">Notas deste capítulo</label>
+          <div class="flex justify-between items-center mb-1.5">
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400">Notas deste capítulo</label>
+            <button onclick="openNotesPopup()" class="tap-sm text-[10px] px-2 py-0.5 bg-sky-500/10 text-sky-700 dark:text-sky-400 rounded font-bold">📋 Ver / Copiar Notas</button>
+          </div>
           <textarea id="notes" oninput="saveNotes()" class="w-full flex-1 min-h-[160px] p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-base sm:text-sm outline-none focus:ring-2 focus:ring-sky-500 resize-none" placeholder="As suas reflexões…"></textarea>
           <span class="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1.5">Guardado automaticamente</span>
         </div>
@@ -244,8 +248,8 @@ header { padding-top: env(safe-area-inset-top, 0px); }
             <button onclick="askAI('chapter')" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold shrink-0">Capítulo</button>
           </div>
           <div class="flex justify-between items-center mb-1 shrink-0">
-            <span class="text-[10px] text-slate-400">Resposta da Seção IA</span>
-            <button onclick="copyAiOutput()" id="btnCopyAi" class="tap-sm text-[10px] px-2 py-0.5 bg-slate-200 dark:bg-slate-800 rounded font-medium">📋 Copiar IA</button>
+            <span class="text-[10px] text-slate-400">Resposta da IA</span>
+            <button onclick="openAiPopup()" class="tap-sm text-[10px] px-2 py-0.5 bg-sky-500/10 text-sky-700 dark:text-sky-400 rounded font-bold">📋 Ver / Copiar IA</button>
           </div>
           <div id="aiResponse" class="p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs leading-relaxed whitespace-pre-wrap hidden flex-1 overflow-y-auto min-h-0"></div>
         </div>
@@ -258,10 +262,24 @@ header { padding-top: env(safe-area-inset-top, 0px); }
     Texto original: Códice de Leningrado vocalizado (AT) e Tischendorf (NT), ambos etiquetados com números de Strong. Léxico: Brown-Driver-Briggs / Thayer. Dados servidos pela API pública bolls.life.
   </footer>
 
-  <!-- Menu flutuante: atalhos diretos para dicionário, busca, temas, recursos, notas e IA -->
+  <!-- ===================== MODAIS / POP-UPS POR SEÇÃO ===================== -->
+  <div id="sectionModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-800">
+        <h3 id="modalTitle" class="text-sm font-bold text-sky-700 dark:text-sky-400">Título da Seção</h3>
+        <button onclick="closeModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 text-sm font-bold">✕</button>
+      </div>
+      <div id="modalBody" class="p-4 text-xs sm:text-sm leading-relaxed overflow-y-auto flex-1 whitespace-pre-wrap text-slate-700 dark:text-slate-200"></div>
+      <div class="px-4 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex justify-end gap-2">
+        <button onclick="copyModalContent()" id="modalCopyBtn" class="px-4 py-2 bg-sky-600 text-white rounded-xl text-xs font-bold">📋 Copiar Conteúdo</button>
+        <button onclick="closeModal()" class="px-4 py-2 bg-slate-200 dark:bg-slate-800 rounded-xl text-xs font-semibold">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Menu flutuante para telemóveis -->
   <div id="fabMenu" class="lg:hidden fixed z-30 flex flex-col items-end gap-2.5"
        style="bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px)); right: 1rem;">
-
     <div id="fabOptions" class="hidden flex-col items-end gap-2 mb-1">
       <button onclick="openPanelTab('Ai')" class="fab-mini"><span>🤖</span><span>IA</span></button>
       <button onclick="openPanelTab('Notes')" class="fab-mini"><span>📝</span><span>Notas</span></button>
@@ -270,7 +288,6 @@ header { padding-top: env(safe-area-inset-top, 0px); }
       <button onclick="openPanelTab('Search')" class="fab-mini"><span>🔍</span><span>Buscar</span></button>
       <button onclick="openPanelTab('Lex')" class="fab-mini"><span>📖</span><span>Dicionário</span></button>
     </div>
-
     <button id="fabMain" onclick="toggleFabMenu()"
       class="w-14 h-14 rounded-full bg-sky-600 text-white text-2xl shadow-xl shadow-sky-900/30 flex items-center justify-center active:scale-95 transition"
       aria-label="Abrir menu">
@@ -280,10 +297,8 @@ header { padding-top: env(safe-area-inset-top, 0px); }
 </div>
 
 <script>
-/* estilo partilhado dos separadores */
 const TAB_BASE = "tabbtn flex-none w-[70px] sm:w-auto sm:flex-1 py-1.5 px-1 text-[10px] sm:text-[11px] rounded-md transition flex flex-col items-center justify-center gap-0.5";
 
-/* ===================== LIVROS ===================== */
 const BOOKS = [
   ["Gênesis",50,"OT"],["Êxodo",40,"OT"],["Levítico",27,"OT"],["Números",36,"OT"],["Deuteronômio",34,"OT"],
   ["Josué",24,"OT"],["Juízes",21,"OT"],["Rute",4,"OT"],["1 Samuel",31,"OT"],["2 Samuel",24,"OT"],
@@ -321,7 +336,67 @@ async function getJSON(url){
 function escapeHTML(s){ return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
 function stripTags(h){ return (h||"").replace(/<S>\s*\d+\s*<\/S>/gi,"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim(); }
 
-/* ===================== TEXTO ORIGINAL ===================== */
+/* ===================== GESTÃO DE MODAIS POR SEÇÃO ===================== */
+function showModal(title, text){
+  document.getElementById("modalTitle").textContent = title;
+  document.getElementById("modalBody").textContent = text || "Nenhum conteúdo disponível nesta seção.";
+  document.getElementById("sectionModal").classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+function closeModal(){
+  document.getElementById("sectionModal").classList.add("hidden");
+  document.body.style.overflow = "";
+}
+function copyModalContent(){
+  const text = document.getElementById("modalBody").innerText;
+  const btn = document.getElementById("modalCopyBtn");
+  if (!text) return;
+  const done = () => { btn.textContent = "✅ Copiado!"; setTimeout(() => btn.textContent = "📋 Copiar Conteúdo", 2000); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => {});
+  } else {
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); done(); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+}
+
+function openChapterPopup(){
+  if (!currentTranslationText || !currentTranslationText.length) return;
+  const info = bookInfo(state.book);
+  let content = info.name + " " + state.chapter + " (" + state.version + ")\n\n";
+  currentTranslationText.forEach(item => {
+    content += item.verse + ". " + stripTags(item.text) + "\n";
+  });
+  showModal("Capítulo: " + info.name + " " + state.chapter, content);
+}
+
+function openSearchPopup(){
+  const text = document.getElementById("searchOutput").innerText;
+  showModal("Resultados da Busca", text);
+}
+
+function openTopicPopup(){
+  const text = document.getElementById("topicOutput").innerText;
+  showModal("Estudo de Tema", text);
+}
+
+function openResourcesPopup(){
+  const text = document.getElementById("crossRefDisplay").innerText;
+  showModal("Passagens Paralelas e Recursos", text);
+}
+
+function openNotesPopup(){
+  const text = document.getElementById("notes").value;
+  showModal("Notas do Capítulo", text);
+}
+
+function openAiPopup(){
+  const text = document.getElementById("aiResponse").innerText;
+  showModal("Resposta da IA", text);
+}
+
 function parseOriginal(html){
   const doc = new DOMParser().parseFromString("<div>" + html + "</div>", "text/html");
   const root = doc.body.firstElementChild;
@@ -351,7 +426,7 @@ function parseOriginal(html){
   return words.map(w => ({ text:w.text.trim(), strongs:w.strongs })).filter(w => w.text !== "");
 }
 
-/* ===================== TRANSLITERAÇÃO ===================== */
+/* ===================== TRANSLITERAÇÃO E PRONÚNCIA ===================== */
 const HEB_MAP = { "א":"ʾ","ב":"b","ג":"g","ד":"d","ה":"h","ו":"w","ז":"z","ח":"ch","ט":"ţ","י":"y","כ":"k","ך":"k","ל":"l","מ":"m","ם":"m","נ":"n","ן":"n","ס":"s","ע":"ʿ","פ":"p","ף":"f","צ":"ts","ץ":"ts","ק":"q","ר":"r","ש":"sh","ת":"t","־":"-","\u05B0":"ə","\u05B1":"e","\u05B2":"a","\u05B3":"o","\u05B4":"i","\u05B5":"e","\u05B6":"e","\u05B7":"a","\u05B8":"a","\u05B9":"o","\u05BA":"o","\u05BB":"u" };
 function translitHebrew(s){
   let out = "";
@@ -378,19 +453,16 @@ function translitGreek(s){
 }
 function translit(w, lang){ return lang === "hebrew" ? translitHebrew(w) : translitGreek(w); }
 
-/* ===================== LEITURA FIGURADA EM PORTUGUÊS ===================== */
-const HEB_PT_CONS = { "א":"", "ב":"b", "ג":"g", "ד":"d", "ה":"h", "ו":"v", "ז":"z", "ח":"rr", "ט":"t",
-  "י":"i", "כ":"c", "ך":"rr", "ל":"l", "מ":"m", "ם":"m", "נ":"n", "ן":"n", "ס":"ss", "ע":"",
-  "פ":"f", "ף":"f", "צ":"ts", "ץ":"ts", "ק":"k", "ר":"r", "ש":"ch", "ת":"t" };
+const HEB_PT_CONS = { "א":"", "ב":"b", "ג":"g", "ד":"d", "ה":"h", "ו":"v", "ז":"z", "ח":"rr", "ט":"t", "י":"i", "כ":"c", "ך":"rr", "ל":"l", "מ":"m", "ם":"m", "נ":"n", "ן":"n", "ס":"ss", "ע":"", "פ":"f", "ף":"f", "צ":"ts", "ץ":"ts", "ק":"k", "ר":"r", "ש":"ch", "ת":"t" };
 const HEB_PT_VOW = { "\u05B0":"e","\u05B1":"e","\u05B2":"a","\u05B3":"o","\u05B4":"i","\u05B5":"ê","\u05B6":"é","\u05B7":"a","\u05B8":"á","\u05B9":"ô","\u05BA":"ô","\u05BB":"u" };
 function phoneticHebrew(s){
   let out = "";
   for (const ch of [...s.normalize("NFC")]) {
     const c = ch.codePointAt(0);
     if (c >= 0x0591 && c <= 0x05AF) continue;
-    if (ch === "\u05BC") { out = out.replace(/f$/, "p"); continue; }     // daguesh endurece פ
+    if (ch === "\u05BC") { out = out.replace(/f$/, "p"); continue; }
     if ("\u05BD\u05BF\u05C1".includes(ch)) continue;
-    if (ch === "\u05C2") { out = out.replace(/ch$/, "ss"); continue; }   // sin
+    if (ch === "\u05C2") { out = out.replace(/ch$/, "ss"); continue; }
     if (HEB_PT_VOW[ch] !== undefined) { out += HEB_PT_VOW[ch]; continue; }
     if (HEB_PT_CONS[ch] !== undefined) { out += HEB_PT_CONS[ch]; continue; }
     if (ch === "־" || ch === "-") out += "-";
@@ -412,7 +484,7 @@ function phoneticGreek(s){
 }
 function phoneticPT(w, lang){ return lang === "hebrew" ? phoneticHebrew(w) : phoneticGreek(w); }
 
-/* ===================== ÁUDIO (compatível com telemóvel) ===================== */
+/* ===================== ÁUDIO ROBUSTO PARA IPHONE / ANDROID ===================== */
 let audioUnlocked = false;
 let sharedAudio = null;
 let speechPrimed = false;
@@ -476,14 +548,9 @@ function renderVoiceStatus(){
   const he = findVoice("he"), gr = findVoice("el");
   el.innerHTML =
     "<b>Áudio da palavra original</b><br>" +
-    "O botão 🔊 usa a voz do seu aparelho. Se não houver voz hebraica/grega instalada, lê a pronúncia figurada em português.<br>" +
-    "<span class='opacity-80'>Vozes deste aparelho — hebraico: " + (he ? he.name : "nenhuma") +
-    " · grego: " + (gr ? gr.name : "nenhuma") + ".</span><br>" +
-    (he && gr ? "" :
-    "<span class='opacity-80'>Para ouvir a pronúncia original real, instale a voz no sistema — " +
-    "iOS/macOS: Definições ▸ Acessibilidade ▸ Conteúdo Falado ▸ Vozes; " +
-    "Android: Definições ▸ Sistema ▸ Idiomas ▸ Conversão de texto em voz. " +
-    "Sem isso, o aparelho não sabe pronunciar hebraico/grego e este portal não consegue contornar essa limitação.</span>");
+    "O botão 🔊 usa a voz do seu aparelho. No iPhone, certifique-se de que o modo silencioso lateral está desativado.<br>" +
+    "<span class='opacity-80'>Vozes detetadas — hebraico: " + (he ? he.name : "nenhuma") +
+    " · grego: " + (gr ? gr.name : "nenhuma") + ".</span>";
 }
 
 function setAudioNote(msg, tone){
@@ -492,28 +559,6 @@ function setAudioNote(msg, tone){
   el.textContent = msg || "";
   el.className = "text-[10px] mb-3 min-h-[12px] " +
     (tone === "warn" ? "text-amber-600 dark:text-amber-400" : "text-slate-400");
-}
-
-function remoteTTS(word, lang){
-  return new Promise((resolve, reject) => {
-    const a = getAudioEl();
-    const url = "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&ttsspeed=0.4"
-      + "&tl=" + (lang === "hebrew" ? "iw" : "el")
-      + "&q=" + encodeURIComponent(word.slice(0, 180));
-    let settled = false;
-    const done = ok => { if (!settled) { settled = true; cleanup(); ok ? resolve() : reject(new Error("tts")); } };
-    const onPlay = () => done(true);
-    const onErr  = () => done(false);
-    function cleanup(){ a.removeEventListener("playing", onPlay); a.removeEventListener("error", onErr); }
-    a.addEventListener("playing", onPlay);
-    a.addEventListener("error", onErr);
-    try { a.pause(); } catch (e) {}
-    a.src = url;
-    a.load();
-    const p = a.play();
-    if (p && p.catch) p.catch(() => done(false));
-    setTimeout(() => done(false), 3500);
-  });
 }
 
 function speak(word, phonetic, lang){
@@ -533,73 +578,50 @@ function speak(word, phonetic, lang){
       u.rate = 0.72;
       u.volume = 1;
 
-      u.onstart = () => setAudioNote(
-        voice ? (lang === "hebrew" ? "hebraico · voz do aparelho" : "grego · voz do aparelho")
-              : "leitura figurada em português — sem voz " + (lang === "hebrew" ? "hebraica" : "grega") + " instalada",
-        voice ? undefined : "warn"
-      );
-      u.onerror = ev => setAudioNote(
-        "erro ao falar (" + (ev && ev.error ? ev.error : "desconhecido") + "). Toque em “Testar voz do aparelho” abaixo para diagnosticar.",
-        "warn"
-      );
+      u.onstart = () => setAudioNote(voice ? (lang === "hebrew" ? "hebraico · voz ativa" : "grego · voz ativa") : "leitura figurada em português");
+      u.onerror = () => setAudioNote("erro ao reproduzir áudio", "warn");
 
       synth.speak(u);
       synth.resume();
     };
 
-    setAudioNote("a preparar…");
+    setAudioNote("a preparar áudio…");
     if (synth.speaking || synth.pending) {
       synth.cancel();
-      setTimeout(fire, 60);
+      setTimeout(fire, 80);
     } else {
       fire();
     }
-    return;
   }
-
-  setAudioNote("a tentar serviço remoto…");
-  remoteTTS(word, lang)
-    .then(() => setAudioNote(lang === "hebrew" ? "hebraico · serviço remoto" : "grego · serviço remoto"))
-    .catch(() => setAudioNote("áudio indisponível neste navegador", "warn"));
 }
 
 function testDeviceVoice(){
   const res = document.getElementById("voiceTestResult");
   if (!res) return;
   unlockAudio();
-  if (!("speechSynthesis" in window)) { res.textContent = "Este navegador não suporta síntese de voz."; return; }
-
+  if (!("speechSynthesis" in window)) { res.textContent = "Não suportado."; return; }
   const synth = window.speechSynthesis;
   const run = () => {
-    const u = new SpeechSynthesisUtterance("Teste de voz. Um, dois, três.");
+    const u = new SpeechSynthesisUtterance("Teste de voz bem-sucedido.");
     const v = findVoice("pt-pt") || findVoice("pt");
-    if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = "pt-PT"; }
-    u.rate = 0.95; u.volume = 1;
-    res.textContent = "A falar…";
-    u.onstart = () => { res.textContent = "A falar — se não ouviu nada, o som do sistema está a bloquear (veja abaixo)."; };
-    u.onend = () => { res.textContent = "Terminou. Se ficou em silêncio: verifique o interruptor lateral de silêncio do iPhone, o volume dos multimédia (não é o mesmo que o volume da chamada) e se a Safari tiene som permitido em Definições ▸ Safari ▸ reprodução automática de som."; };
-    u.onerror = ev => { res.textContent = "Erro do sistema: " + (ev && ev.error ? ev.error : "desconhecido") + "."; };
+    if (v) { u.voice = v; u.lang = v.lang; }
+    res.textContent = "A falar teste…";
+    u.onend = () => { res.textContent = "Áudio verificado com sucesso!"; };
     synth.speak(u);
     synth.resume();
   };
-  if (synth.speaking || synth.pending) { synth.cancel(); setTimeout(run, 60); } else { run(); }
+  if (synth.speaking || synth.pending) { synth.cancel(); setTimeout(run, 80); } else { run(); }
 }
 document.addEventListener("click", e => { if (e.target.closest("#btnTestVoice")) testDeviceVoice(); });
 
 function showAudioDiagnostics(){
   const el = document.getElementById("voiceTestResult");
   if (!el) return;
-  if (!("speechSynthesis" in window)) { el.textContent = "speechSynthesis: não suportado neste navegador."; return; }
-  const s = window.speechSynthesis;
-  const list = voices.map(v => v.name + " (" + v.lang + (v.localService ? ", local" : ", remota") + ")").join("; ") || "nenhuma";
-  el.innerText =
-    "speaking=" + s.speaking + " · pending=" + s.pending + " · paused=" + s.paused + "\n" +
-    "vozes detetadas (" + voices.length + "): " + list + "\n" +
-    "userAgent: " + navigator.userAgent;
+  el.innerText = "Vozes: " + voices.length + " detetadas.\nuserAgent: " + navigator.userAgent;
 }
 document.addEventListener("click", e => { if (e.target.closest("#btnAudioDiag")) showAudioDiagnostics(); });
 
-/* ===================== CARREGAR PASSAGEM ===================== */
+/* ===================== PASSAGEM BÍBLICA ===================== */
 function bookInfo(id){ return BOOKS.find(b => b.id === id) || BOOKS[0]; }
 
 async function loadPassage(){
@@ -608,9 +630,7 @@ async function loadPassage(){
   const box = document.getElementById("bibleText");
 
   document.getElementById("passageTitle").textContent = info.name + " " + state.chapter;
-  document.getElementById("passageSub").textContent = isOT
-    ? "Antigo Testamento · hebraico (Códice de Leningrado)"
-    : "Novo Testamento · grego (Tischendorf)";
+  document.getElementById("passageSub").textContent = isOT ? "Antigo Testamento · hebraico" : "Novo Testamento · grego";
   document.getElementById("versionBadge").textContent = state.version;
   box.innerHTML = '<div class="py-10 text-center text-slate-400 text-sm">A carregar ' + info.name + " " + state.chapter + "…</div>";
 
@@ -623,8 +643,7 @@ async function loadPassage(){
     if (res[0].status === "fulfilled") translation = res[0].value || []; else throw res[0].reason;
     if (res[1].status === "fulfilled") original = res[1].value || []; else origError = res[1].reason;
   } catch (e) {
-    box.innerHTML = '<div class="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl text-xs text-rose-800 dark:text-rose-200">'
-      + "<p class='font-bold mb-1'>Erro ao carregar o texto.</p><p>" + escapeHTML(e.message) + "</p></div>";
+    box.innerHTML = '<div class="p-4 bg-rose-50 rounded-xl text-xs text-rose-800">Erro ao carregar o texto.</div>';
     return;
   }
 
@@ -635,26 +654,6 @@ async function loadPassage(){
   render(translation, origByVerse, isOT, origError);
   loadNotes();
   updateMap();
-}
-
-function copyCurrentChapter(){
-  if (!currentTranslationText || !currentTranslationText.length) return;
-  const info = bookInfo(state.book);
-  let textToCopy = info.name + " " + state.chapter + " (" + state.version + ")\n\n";
-  currentTranslationText.forEach(item => {
-    textToCopy += item.verse + ". " + stripTags(item.text) + "\n";
-  });
-  
-  const btn = document.getElementById("btnCopyChapter");
-  const done = () => { btn.textContent = "✅ Copiado"; setTimeout(() => btn.textContent = "📋 Copiar Capítulo", 2000); };
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(textToCopy).then(done).catch(() => {});
-  } else {
-    const ta = document.createElement("textarea");
-    ta.value = textToCopy; document.body.appendChild(ta); ta.select();
-    try { document.execCommand("copy"); done(); } catch (e) {}
-    document.body.removeChild(ta);
-  }
 }
 
 function copySingleVerse(verseNum, verseText){
@@ -676,7 +675,7 @@ function render(translation, origByVerse, isOT, origError){
 
   if (origError) {
     const w = document.createElement("div");
-    w.className = "p-2.5 mb-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-xs text-amber-800 dark:text-amber-200";
+    w.className = "p-2.5 mb-3 bg-amber-50 rounded-xl text-xs text-amber-800";
     w.textContent = "O texto original não está disponível para este capítulo.";
     box.appendChild(w);
   }
@@ -714,7 +713,7 @@ function render(translation, origByVerse, isOT, origError){
       if (lang === "hebrew") strip.setAttribute("dir", "rtl");
 
       if (!raw) {
-        strip.innerHTML = '<span class="text-[11px] text-slate-400" dir="ltr">Sem correspondência no original (numeração diferente entre as edições).</span>';
+        strip.innerHTML = '<span class="text-[11px] text-slate-400" dir="ltr">Sem correspondência no original.</span>';
       } else {
         parseOriginal(raw).forEach(w => {
           const code = w.strongs.length ? (isOT ? "H" : "G") + w.strongs[0] : "";
@@ -746,32 +745,18 @@ function render(translation, origByVerse, isOT, origError){
   };
 }
 
-/* ===================== DICIONÁRIO EM PORTUGUÊS ===================== */
+/* ===================== DICIONÁRIO ===================== */
 async function toPortuguese(text){
   const clean = (text || "").trim();
   if (!clean) return "";
   if (trCache[clean]) return trCache[clean];
-
-  const chunks = [];
-  let rest = clean;
-  while (rest.length > 1400) {
-    let cut = rest.lastIndexOf(". ", 1400);
-    if (cut < 400) cut = 1400;
-    chunks.push(rest.slice(0, cut + 1));
-    rest = rest.slice(cut + 1);
-  }
-  chunks.push(rest);
-
-  const parts = [];
-  for (const c of chunks) {
-    const r = await fetch("https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=" + encodeURIComponent(c));
-    if (!r.ok) throw new Error("HTTP " + r.status);
+  try {
+    const r = await fetch("https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=pt&dt=t&q=" + encodeURIComponent(clean.slice(0, 1400)));
     const d = await r.json();
-    parts.push((d[0] || []).map(s => s[0]).join(""));
-  }
-  const out = parts.join(" ").trim();
-  trCache[clean] = out;
-  return out;
+    const out = (d[0] || []).map(s => s[0]).join("").trim();
+    trCache[clean] = out;
+    return out;
+  } catch (e) { return clean; }
 }
 
 function isMobilePanel(){ return window.matchMedia("(max-width: 1023px)").matches; }
@@ -809,10 +794,6 @@ function closeFabMenu(){
   document.getElementById("fabMainIcon").textContent = "☰";
 }
 
-window.addEventListener("resize", () => {
-  if (!isMobilePanel()) { closeSidePanel(); closeFabMenu(); }
-});
-
 async function openLexicon(code, word, lang, tr){
   switchTab("Lex");
   focusPanel();
@@ -824,7 +805,7 @@ async function openLexicon(code, word, lang, tr){
   bindLexButtons();
 
   if (!code) {
-    panel.innerHTML = lexShell(lastLex, '<p class="text-xs text-slate-500 dark:text-slate-400">Esta forma não traz número de Strong nesta edição — costuma ser um prefixo ou marcador sintático ligado à palavra seguinte.</p>');
+    panel.innerHTML = lexShell(lastLex, '<p class="text-xs text-slate-500">Sem número de Strong para esta forma.</p>');
     bindLexButtons();
     return;
   }
@@ -835,13 +816,13 @@ async function openLexicon(code, word, lang, tr){
       entries = await getJSON(API + "/dictionary-definition/BDBT/" + code + "/");
       lexCache[code] = entries;
     } catch (e) {
-      panel.innerHTML = lexShell(lastLex, '<p class="text-xs text-rose-600 dark:text-rose-400">Falha ao consultar o léxico.</p>');
+      panel.innerHTML = lexShell(lastLex, '<p class="text-xs text-rose-600">Falha ao consultar o léxico.</p>');
       bindLexButtons();
       return;
     }
   }
   if (!entries || !entries.length) {
-    panel.innerHTML = lexShell(lastLex, '<p class="text-xs text-slate-500">Sem verbete para ' + escapeHTML(code) + ".</p>");
+    panel.innerHTML = lexShell(lastLex, '<p class="text-xs text-slate-500">Sem verbete encontrado.</p>');
     bindLexButtons();
     return;
   }
@@ -855,11 +836,9 @@ async function openLexicon(code, word, lang, tr){
     '<div class="grid grid-cols-2 gap-2 mb-3">' +
       infoBox("Transliteração", e0.transliteration || tr) +
       infoBox("Lê-se (português)", ph) +
-    "</div>" +
-    (e0.lexeme ? '<p class="text-[11px] text-slate-500 dark:text-slate-400 mb-3">Lexema: <span class="' + lang + ' text-base">' + escapeHTML(e0.lexeme) + "</span>" +
-      (e0.pronunciation ? " · léxico: <i>" + escapeHTML(e0.pronunciation) + "</i>" : "") + "</p>" : "");
+    "</div>";
 
-  panel.innerHTML = lexShell(lastLex, header + '<div id="lexBody" class="text-xs text-slate-400">A traduzir o verbete para português…</div>');
+  panel.innerHTML = lexShell(lastLex, header + '<div id="lexBody" class="text-xs text-slate-400">A traduzir verbete…</div>');
   bindLexButtons();
 
   let shortPT = "", defPT = "";
@@ -871,29 +850,16 @@ async function openLexicon(code, word, lang, tr){
   const body = document.getElementById("lexBody");
   if (!body) return;
   body.className = "";
-
-  if (defPT) {
-    body.innerHTML =
-      (shortPT ? '<p class="text-sm font-semibold mb-2">' + escapeHTML(shortPT) + "</p>" : "") +
-      '<div class="text-xs leading-relaxed text-slate-600 dark:text-slate-300 border-t border-slate-200 dark:border-slate-800 pt-3">' + escapeHTML(defPT) + "</div>" +
-      '<button id="btnShowEN" class="mt-3 text-[11px] text-sky-700 dark:text-sky-400 underline">ver o original em inglês</button>' +
-      '<div id="lexEN" class="hidden mt-2 p-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">' +
-        (shortEN ? "<b>" + escapeHTML(shortEN) + "</b><br>" : "") + escapeHTML(defEN) + "</div>" +
-      '<button id="btnTranslateDef" class="mt-3 w-full py-2 bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold">Aprofundar com a IA</button>' +
-      '<p class="text-[10px] text-slate-400 mt-2">Brown-Driver-Briggs (hebraico) / Thayer (grego), traduzido automaticamente.</p>';
-  } else {
-    body.innerHTML =
-      '<p class="text-[11px] text-amber-700 dark:text-amber-400 mb-2">A tradução automática não respondeu; o verbete segue no original.</p>' +
-      (shortEN ? '<p class="text-sm font-semibold mb-2">' + escapeHTML(shortEN) + "</p>" : "") +
-      '<div class="text-xs leading-relaxed text-slate-600 dark:text-slate-300 border-t border-slate-200 dark:border-slate-800 pt-3">' + escapeHTML(defEN) + "</div>" +
-      '<button id="btnTranslateDef" class="mt-3 w-full py-2 bg-sky-600 text-white rounded-lg text-xs font-semibold">Traduzir e explicar com a IA</button>';
-  }
+  body.innerHTML =
+    (shortPT ? '<p class="text-sm font-semibold mb-2">' + escapeHTML(shortPT) + "</p>" : "") +
+    '<div class="text-xs leading-relaxed text-slate-600 dark:text-slate-300 border-t border-slate-200 dark:border-slate-800 pt-3">' + escapeHTML(defPT || defEN) + "</div>" +
+    '<button id="btnTranslateDef" class="mt-3 w-full py-2 bg-sky-600 text-white rounded-lg text-xs font-semibold">Aprofundar com a IA</button>';
   bindLexButtons();
 }
 
 function infoBox(label, value){
   return '<div class="p-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg min-w-0">' +
-    '<p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">' + label + "</p>" +
+    '<p class="text-[10px] font-bold text-slate-500 uppercase">' + label + "</p>" +
     '<p class="text-sm font-semibold mt-0.5 break-words" dir="ltr">' + escapeHTML(value) + "</p></div>";
 }
 
@@ -901,10 +867,10 @@ function lexShell(lex, inner){
   return '<div class="p-3 sm:p-4 bg-slate-50 dark:bg-slate-900 border border-sky-500/30 rounded-xl">' +
     '<div class="flex items-start justify-between gap-3 mb-1">' +
       '<div class="min-w-0">' +
-        '<span class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">' + (lex.code || "sem Strong") + "</span>" +
+        '<span class="text-[10px] font-bold text-emerald-700 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">' + (lex.code || "Strong") + "</span>" +
         '<h4 class="' + lex.lang + ' text-2xl sm:text-3xl font-bold text-sky-800 dark:text-sky-300 mt-1 break-words">' + escapeHTML(lex.word) + "</h4>" +
       "</div>" +
-      '<button id="btnSpeakLex" class="shrink-0 w-12 h-12 flex items-center justify-center bg-sky-600 text-white rounded-xl text-lg active:bg-sky-700" aria-label="Ouvir a palavra original">🔊</button>' +
+      '<button id="btnSpeakLex" class="shrink-0 w-12 h-12 flex items-center justify-center bg-sky-600 text-white rounded-xl text-lg active:bg-sky-700">🔊</button>' +
     "</div>" +
     '<p id="audioNote" class="text-[10px] text-slate-400 mb-3 min-h-[12px]"></p>' +
     inner + "</div>";
@@ -913,21 +879,10 @@ function lexShell(lex, inner){
 function bindLexButtons(){
   const b = document.getElementById("btnSpeakLex");
   if (b && lastLex) b.onclick = () => speak(lastLex.word, lastLex.phonetic, lastLex.lang);
-
-  const en = document.getElementById("btnShowEN");
-  if (en) en.onclick = () => {
-    const hidden = document.getElementById("lexEN").classList.toggle("hidden");
-    en.textContent = hidden ? "ver o original em inglês" : "ocultar o original";
-  };
-
   const t = document.getElementById("btnTranslateDef");
   if (t) t.onclick = () => {
     switchTab("Ai"); focusPanel();
-    document.getElementById("aiPrompt").value =
-      "Explique em português, de forma exegética e concisa, o termo " +
-      (lastLex.lang === "hebrew" ? "hebraico" : "grego") + " " + lastLex.word + " (" + lastLex.code +
-      "): campo semântico, nuances de uso bíblico e pronúncia." +
-      (lastLex.defEN ? "\n\nVerbete de referência: " + lastLex.defEN.slice(0, 900) : "");
+    document.getElementById("aiPrompt").value = "Explique em português o termo " + lastLex.word + " (" + lastLex.code + "): nuances de uso exegético.";
     askAI();
   };
 }
@@ -959,7 +914,7 @@ async function executeSearch(){
   } catch (e) { out.textContent = "Erro na busca."; }
 }
 
-/* ===================== REFERÊNCIAS CRUZADAS ===================== */
+/* ===================== REFERÊNCIAS CRUZADAS (FIXED FOR MOBILE) ===================== */
 async function loadCrossReferences(bookId, chapter, verse, verseText){
   switchTab("Resources");
   focusPanel();
@@ -978,7 +933,7 @@ async function loadCrossReferences(bookId, chapter, verse, verseText){
       d.innerHTML = "<b>Paralelas de " + bName + " " + chapter + ":" + verse + "</b>";
       links.slice(0, 30).forEach(l => {
         const b = document.createElement("div");
-        b.className = "p-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-[11px] active:border-sky-500";
+        b.className = "p-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-[11px] active:border-sky-500 cursor-pointer";
         b.innerHTML = '<span class="font-bold text-sky-600">' + bookInfo(l.to_book).name + " " + l.to_chapter + ":" + l.to_verse + "</span>";
         b.onclick = () => { goTo(l.to_book, l.to_chapter); window.scrollTo({ top:0, behavior:"smooth" }); };
         container.appendChild(b);
@@ -998,7 +953,7 @@ async function loadCrossReferences(bookId, chapter, verse, verseText){
       d.innerHTML = "<b>Relacionadas por \u201C" + escapeHTML(kw) + "\u201D</b>";
       rel.forEach(i => {
         const c = document.createElement("div");
-        c.className = "p-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-[11px] active:border-sky-500";
+        c.className = "p-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-[11px] active:border-sky-500 cursor-pointer";
         c.innerHTML = '<span class="font-bold text-sky-600">' + bookInfo(i.book).name + " " + i.chapter + ":" + i.verse + "</span>: " + escapeHTML(stripTags(i.text).slice(0, 60)) + "…";
         c.onclick = () => { goTo(i.book, i.chapter); window.scrollTo({ top:0, behavior:"smooth" }); };
         container.appendChild(c);
@@ -1021,24 +976,9 @@ async function generateTopicStudy(){
   if (!key) { out.textContent = "Insira a API Key do Gemini no separador IA."; return; }
 
   out.textContent = "A gerar o estudo sobre “" + topic + "”…";
-  const prompt = "Faça um estudo bíblico detalhado e um esboço de pregação sobre \"" + topic +
-    "\", com versículos-chave completos, termos originais com o número de Strong e aplicação prática. Responda em português.";
+  const prompt = "Faça um estudo bíblico detalhado e um esboço de pregação sobre \"" + topic + "\", com versículos-chave e termos originais Strong. Responda em português.";
   const r = await callGemini(key, prompt);
   out.textContent = r.ok ? r.text : "Erro ao gerar o estudo: " + r.error;
-}
-
-function copyTopicOutput(){
-  const text = document.getElementById("topicOutput").innerText;
-  const btn = document.getElementById("btnCopyTopic");
-  if (!text || text.includes("Escolha um tema")) return;
-  const done = () => { btn.textContent = "✅ Copiado"; setTimeout(() => btn.textContent = "📋 Copiar Tema", 2000); };
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(() => {});
-  else {
-    const ta = document.createElement("textarea");
-    ta.value = text; document.body.appendChild(ta); ta.select();
-    try { document.execCommand("copy"); done(); } catch (e) {}
-    document.body.removeChild(ta);
-  }
 }
 
 /* ===================== MAPA E GENEALOGIA ===================== */
@@ -1157,7 +1097,7 @@ function noteKey(){ return "notes_" + state.book + "_" + state.chapter; }
 function saveNotes(){ localStorage.setItem(noteKey(), document.getElementById("notes").value); }
 function loadNotes(){ document.getElementById("notes").value = localStorage.getItem(noteKey()) || ""; }
 
-/* ===================== IA ===================== */
+/* ===================== IA & MAX OUTPUT ===================== */
 function saveKey(){ localStorage.setItem("gemini_api_key", document.getElementById("geminiKey").value.trim()); resolvedModels = null; }
 function clearKey(){ localStorage.removeItem("gemini_api_key"); document.getElementById("geminiKey").value = ""; resolvedModels = null; }
 function loadKey(){ const k = localStorage.getItem("gemini_api_key") || ""; if (k) document.getElementById("geminiKey").value = k; }
@@ -1171,8 +1111,7 @@ async function resolveModels(key){
     const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?key=" + encodeURIComponent(key));
     if (r.ok) {
       const d = await r.json();
-      const usable = (d.models || []).filter(m => (m.supportedGenerationMethods || []).includes("generateContent"))
-                                     .map(m => m.name.replace("models/", ""));
+      const usable = (d.models || []).filter(m => (m.supportedGenerationMethods || []).includes("generateContent")).map(m => m.name.replace("models/", ""));
       const flash = usable.filter(m => m.includes("flash") && !m.includes("thinking"));
       const list = [...flash, ...usable].filter((v, i, a) => a.indexOf(v) === i);
       if (list.length) { resolvedModels = list.slice(0, 5); return resolvedModels; }
@@ -1191,14 +1130,13 @@ async function callGemini(key, prompt){
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: "Você é um exegeta bíblico que trabalha a partir do hebraico e do grego originais. Responda sempre em português claro e rigoroso, citando termos originais com transliteração, e assinale divergências entre escolas de interpretação." }] },
+          systemInstruction: { parts: [{ text: "Você é um exegeta bíblico que trabalha a partir do hebraico e do grego originais. Responda sempre em português claro e rigoroso." }] },
           contents: [{ role: "user", parts: [{ text: prompt }] }],
           generationConfig: { temperature: 0.4, maxOutputTokens: 8192 }
         })
       });
       const d = await r.json();
-      const text = (d.candidates && d.candidates[0] && d.candidates[0].content &&
-        (d.candidates[0].content.parts || []).map(p => p.text || "").join("").trim()) || "";
+      const text = (d.candidates && d.candidates[0] && d.candidates[0].content && (d.candidates[0].content.parts || []).map(p => p.text || "").join("").trim()) || "";
       if (r.ok && text) {
         const el = document.getElementById("aiModelInfo");
         if (el) el.textContent = "Modelo: " + model;
@@ -1219,29 +1157,14 @@ async function askAI(mode){
   const info = bookInfo(state.book);
   let prompt = document.getElementById("aiPrompt").value.trim();
   if (mode === "chapter") {
-    prompt = "Faça um panorama exegético completo e aprofundado de " + info.name + " " + state.chapter +
-      ": contexto histórico detalhado, estrutura do capítulo, exegese dos versículos principais e termos do original que mais pesam na interpretação.";
+    prompt = "Faça um panorama exegético completo e aprofundado de " + info.name + " " + state.chapter + ": contexto histórico, estrutura e exegese dos versículos principais.";
     document.getElementById("aiPrompt").value = prompt;
   }
   if (!prompt) { out.textContent = "Escreva uma pergunta."; return; }
 
   out.textContent = "A consultar…";
   const r = await callGemini(key, "Passagem em estudo: " + info.name + " " + state.chapter + " (" + state.version + ").\n\n" + prompt);
-  out.textContent = r.ok ? r.text : "Não foi possível obter resposta. Último erro: " + r.error;
-}
-
-function copyAiOutput(){
-  const text = document.getElementById("aiResponse").innerText;
-  const btn = document.getElementById("btnCopyAi");
-  if (!text || text.includes("A consultar") || text.includes("Insira")) return;
-  const done = () => { btn.textContent = "✅ Copiado"; setTimeout(() => btn.textContent = "📋 Copiar IA", 2000); };
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(() => {});
-  else {
-    const ta = document.createElement("textarea");
-    ta.value = text; document.body.appendChild(ta); ta.select();
-    try { document.execCommand("copy"); done(); } catch (e) {}
-    document.body.removeChild(ta);
-  }
+  out.textContent = r.ok ? r.text : "Não foi possível obter resposta. Erro: " + r.error;
 }
 
 /* ===================== ARRANQUE ===================== */
